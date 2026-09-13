@@ -4,7 +4,7 @@
 
 **Problem Statement:** Travel Planner
 
-**Video Presentation:** _[unlisted YouTube link — to be added before submission]_
+**Video Presentation:** https://youtu.be/bQG9s8NzBco
 
 **Presentation Slides:** _[public link — to be added before submission]_
 
