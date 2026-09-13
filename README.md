@@ -6,7 +6,7 @@
 
 **Video Presentation:** https://youtu.be/bQG9s8NzBco
 
-**Presentation Slides:** _[public link — to be added before submission]_
+**Presentation Slides:** https://docs.google.com/presentation/d/1Z6h0JZJs1orTCc-liKkpJXiwxuKugAiY/edit?usp=drivesdk&ouid=110257129014251685523&rtpof=true&sd=true
 
 **UI Prototype (Figma):** https://www.figma.com/design/FTZudZVL2X3PsmlvoPtUJv/Codenection-HACKATHON
 
