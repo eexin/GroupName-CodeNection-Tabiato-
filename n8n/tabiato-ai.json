@@ -1,0 +1,178 @@
+{
+  "name": "Tabiato AI",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tabiato-ai",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "2919930f-3d14-4bff-b0f3-2bbce0eb141e",
+      "name": "Tabiato request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "b4ca24b8-112e-4a3d-bd9a-4e8950a64599"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Tabiato sends { task, system, user }. Pick the model per task here \u2014\n// change models in n8n without redeploying the app. Check console.groq.com/docs/models.\nconst body = $input.first().json.body ?? {};\nconst task = String(body.task ?? '');\nconst models = {\n  memory_book:   { model: 'llama-3.3-70b-versatile', temperature: 0.7 },\n  insight:       { model: 'llama-3.3-70b-versatile', temperature: 0.5 },\n  intel_notes:   { model: 'llama-3.3-70b-versatile', temperature: 0.3 },\n  hazard_advice: { model: 'llama-3.3-70b-versatile', temperature: 0.3 },\n  rain_replan:   { model: 'llama-3.1-8b-instant',    temperature: 0.4 },\n  plan_titles:   { model: 'llama-3.1-8b-instant',    temperature: 0.6 },\n  note_draft:    { model: 'llama-3.1-8b-instant',    temperature: 0.7 },\n  search_summary:{ model: 'llama-3.1-8b-instant',    temperature: 0.3 },\n};\nif (!models[task] || typeof body.system !== 'string' || typeof body.user !== 'string') {\n  throw new Error(`Unknown task \"${task}\" or missing prompt`);\n}\nreturn [{ json: { task, system: body.system, user: body.user, ...models[task] } }];\n"
+      },
+      "id": "17d41cf0-8da4-425e-9488-87738b572300",
+      "name": "Pick model for task",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: $json.model, temperature: $json.temperature, response_format: { type: 'json_object' }, messages: [ { role: 'system', content: $json.system }, { role: 'user', content: $json.user } ] }) }}",
+        "options": {
+          "timeout": 25000
+        }
+      },
+      "id": "16ac3b8f-2088-42b7-9f35-c9182a0d0340",
+      "name": "Groq",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The app validates the result again with zod \u2014 this just guarantees JSON back.\nconst content = $input.first().json.choices?.[0]?.message?.content ?? '{}';\nlet data;\ntry { data = JSON.parse(content); } catch (e) { throw new Error('Model did not return JSON'); }\nreturn [{ json: { ok: true, task: $('Pick model for task').first().json.task, data } }];\n"
+      },
+      "id": "cc6a6ac1-db36-4759-8077-cbf701aad7a2",
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "babe3ff4-dac3-4414-bdeb-f812f789c327",
+      "name": "Reply to Tabiato",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, error: String($json.error?.message ?? $json.error ?? 'AI step failed') }) }}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "id": "e64680a2-0e37-421f-8604-3b1466f4c862",
+      "name": "Reply with error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Tabiato request": {
+      "main": [
+        [
+          {
+            "node": "Pick model for task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick model for task": {
+      "main": [
+        [
+          {
+            "node": "Groq",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply with error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply with error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Reply to Tabiato",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply with error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

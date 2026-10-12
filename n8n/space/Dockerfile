@@ -1,0 +1,17 @@
+# n8n for Tabiato, pinned to the version the workflow was tested on.
+FROM n8nio/n8n:1.123.82
+
+ENV N8N_PORT=5678 \
+    N8N_LISTEN_ADDRESS=0.0.0.0 \
+    N8N_PROTOCOL=https \
+    N8N_DIAGNOSTICS_ENABLED=false \
+    N8N_PERSONALIZATION_ENABLED=false \
+    N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true \
+    GENERIC_TIMEZONE=Asia/Kuala_Lumpur \
+    DB_TYPE=postgresdb \
+    DB_POSTGRESDB_PORT=5432 \
+    DB_POSTGRESDB_DATABASE=postgres \
+    DB_POSTGRESDB_SSL_ENABLED=true \
+    DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=false
+
+EXPOSE 5678
