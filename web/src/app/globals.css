@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/*
+ * Water World design tokens — mirrored from the Figma "Water World" variable collection.
+ * Change a colour here and it changes everywhere; never hard-code hex values in components.
+ */
+@theme {
+  --color-paper: #eff6f5;
+  --color-card: #ffffff;
+  --color-surface: #e2eeec;
+  --color-line: #d6e6e3;
+
+  --color-ink: #12312f;
+  --color-body: #3d5c59;
+  --color-muted: #536b68;
+
+  --color-coral: #b8402a;        /* was #e8623f — 3.4:1 with white, failed AA */
+  --color-coral-dark: #a33a22;
+  --color-coral-light: #f9ae8c;
+
+  --color-deep: #0e4c55;
+  --color-deeper: #0a3a42;
+  --color-aqua: #7fc9c2;
+  --color-aqua-light: #bfe4e0;
+
+  --color-sand: #e8a23f;         /* decoration and text on dark backgrounds only */
+  --color-sand-ink: #86570f;     /* gold text on light backgrounds */
+  --color-amber-ink: #8e3f13;    /* warning text */
+  --color-blush: #f58a6b;
+  --color-land: #f2ead8;
+
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-card: 0 4px 12px rgb(14 76 85 / 0.09);
+  --shadow-sheet: 0 -6px 20px rgb(14 76 85 / 0.16);
+  --shadow-fab: 0 6px 14px rgb(184 64 42 / 0.35);
+}
+
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* keyboard focus stays visible everywhere */
+:focus-visible {
+  outline: 2px solid var(--color-coral);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* MapLibre attribution sits above the bottom sheet, not under it */
+.maplibregl-ctrl-bottom-right {
+  bottom: 380px !important;
+}

@@ -1,0 +1,48 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "node scripts/copy-map-worker.mjs",
+    "dev": "next dev",
+    "prebuild": "node scripts/copy-map-worker.mjs",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "tsx --test tests/logic.test.ts tests/utils.test.ts tests/qr.test.ts",
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx scripts/seed-demo.ts",
+    "seed:jp-hk": "tsx scripts/seed-japan-hk.ts",
+    "seed:friends": "tsx scripts/seed-friends.ts",
+    "test:coverage": "node --import tsx --experimental-test-coverage --test-coverage-include=\"src/**\" --test tests/logic.test.ts tests/utils.test.ts tests/qr.test.ts",
+    "test:smoke": "tsx --test tests/smoke.test.ts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.1",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
+    "exifr": "^7.1.3",
+    "heic2any": "^0.0.4",
+    "jsqr": "^1.4.0",
+    "maplibre-gl": "^6.11.1",
+    "next": "16.3.6",
+    "qrcode": "^1.5.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}
