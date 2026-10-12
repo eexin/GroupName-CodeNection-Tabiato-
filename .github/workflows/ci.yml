@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: lint · types · tests · build · smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # dummy values: CI never talks to the real database
+      NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-key
+      # so the smoke test can check the demo button appears and its password never reaches the page
+      DEMO_EMAIL: eexin@demo.tabiato.app
+      DEMO_PASSWORD: ci-demo-password-never-in-html
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Unit tests with coverage
+        run: npm run test:coverage
+      - run: npm run build
+      - name: Smoke tests against the production build
+        run: npm run test:smoke

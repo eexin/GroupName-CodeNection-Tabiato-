@@ -1,0 +1,26 @@
+name: Uptime
+
+# Pings /api/health every 30 minutes. A failure emails the repo owner (GitHub's default for
+# failed workflows). Side effect worth having: the check touches Supabase and n8n, so neither
+# free-tier service goes to sleep from inactivity.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check /api/health
+        env:
+          HEALTH_URL: ${{ vars.HEALTH_URL }}
+        run: |
+          if [ -z "$HEALTH_URL" ]; then
+            echo "::warning::Set the HEALTH_URL repository variable (Settings → Secrets and variables → Actions → Variables)"
+            exit 0
+          fi
+          code=$(curl -s -o body.json -w '%{http_code}' --max-time 30 "$HEALTH_URL" || echo 000)
+          cat body.json 2>/dev/null; echo
+          if [ "$code" != "200" ]; then echo "::error::Health check returned HTTP $code"; exit 1; fi
+          if grep -q '"degraded"' body.json; then echo "::warning::Up, but degraded — AI is on its fallback"; fi

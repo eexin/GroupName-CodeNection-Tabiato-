@@ -1,0 +1,31 @@
+name: Reset demo
+
+# Every night at 04:00 Malaysia time: wipe and recreate the demo accounts, so judges and testers
+# always start from the same, complete demo — whatever the previous visitor changed.
+on:
+  schedule:
+    - cron: "0 20 * * *"   # 20:00 UTC = 04:00 MYT
+  workflow_dispatch:
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Re-seed the demo accounts
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+        run: |
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then echo "::warning::Add the SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and DEMO_PASSWORD repository secrets"; exit 0; fi
+          npm run seed
