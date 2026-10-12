@@ -10,6 +10,12 @@
 
 **UI Prototype (Figma):** https://www.figma.com/design/FTZudZVL2X3PsmlvoPtUJv/Codenection-HACKATHON
 
+**Live App:** https://group-name-code-nection-tabiato.vercel.app
+
+**Try it in 30 seconds:** open the link and tap **Explore a sample account** — no sign-up needed.
+It is built for phones: on iPhone, Safari → Share → *Add to Home Screen*; on Android, Chrome →
+*Install app*. The sample account resets itself every night at 04:00 (MYT), so explore freely.
+
 ---
 
 > ### Four people go on the same trip and come home with four separate camera rolls.
@@ -700,21 +706,23 @@ each sits behind a provider interface so a paid upgrade is a config change, not 
 | Layer | Choice | Why this, and what it costs us |
 | --- | --- | --- |
 | Frontend | **Next.js (App Router) + TypeScript**, installable **PWA** | Mobile-first, because nobody opens a laptop mid-trip. A PWA gives the phone experience without app-store review, and the same codebase serves the desktop planner — the one part people *do* use on a computer. Trade-off: no native photo-library integration, so uploads go through the file picker. |
-| UI | Tailwind CSS + shadcn/ui | Accessible primitives, fast to build. Our Figma design system maps onto it directly. |
+| UI | Tailwind CSS v4, our own components | Built straight from the Figma tokens. Every text colour is checked against WCAG AA contrast ([docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md)). |
 | Map | **MapLibre GL JS** + OpenFreeMap tiles, custom style | The Water World theme needs real style control — custom sprites, patterns, layer colours. MapLibre supports all of it and the tile endpoint has no request cap. Google Maps was rejected here specifically: its cloud styling only recolours existing layers, so our theme is not buildable on it. |
 | Photo metadata | **exifr**, client-side | Reads GPS and timestamp in the browser before upload, so we never pay to process a photo we would reject. |
 | Place naming | **Nominatim** reverse geocoding, cached | Turns coordinates into a place name. Hard 1 req/sec policy, so we batch per upload session and cache aggressively; a repeat location costs zero requests. |
 | POI data | **Overpass API** over OpenStreetMap, cached to Postgres | Powers must-visit search and itinerary gap-filling. Queried once per city, then served from our own database. |
-| Routing | **OpenRouteService** free tier | One distance-matrix call covers a city's cached POIs, so re-ordering a day afterwards costs no network calls. |
+| Itinerary ordering | **Our own scheduler** in TypeScript, unit-tested | Orders stops by distance, never drops or moves a place the user added (fixed day and time are honoured), and fills gaps with real OSM places weighted by what you rated highly before. No routing API means no rate limit to hit; every stop links out to Google Maps for directions. |
 | Backend | Next.js Route Handlers + Server Actions | One deployable. With four people and a month, a separate API service is overhead we cannot justify. |
 | Database | **Supabase Postgres** (free tier) | Row-level security is the reason. Shared trips mean one person's photos must be visible to trip members and nobody else — RLS enforces that at the database, not in application code. |
-| Auth | Supabase Auth | Email plus Google and Apple, matching the prototype, wired to the same RLS policies. |
+| Auth | Supabase Auth | Email sign-up and a one-tap sample account for judges; Google sign-in and password reset by email are built in and switched on through configuration. All of it sits under the same RLS policies. |
 | Photo storage | Supabase Storage (1 GB free) | Client-side compression before upload; the demo dataset is capped deliberately. This is our tightest ceiling and we know it. |
-| LLM (text) | **Groq** free tier, open-weight models | Memory book, insights, itinerary ordering. Fast enough that generation feels live on stage. Output cached by prompt hash, so re-running the demo costs nothing and cannot be broken by a rate limit. |
+| LLM (text) | **Groq** free tier, open-weight models | Memory book, insights, day titles, rain and hazard suggestions, trip-intel notes, search summaries. Every number and observation is computed in code first; the model only writes prose from those facts and is validated against a schema. Output cached by prompt hash, so re-running the demo costs nothing and cannot be broken by a rate limit. |
+| AI orchestration | **n8n**, self-hosted free | Every AI call goes app → n8n → Groq, with the model chosen per task inside n8n, so it can be changed without redeploying. If n8n is asleep the app calls Groq directly; if that fails too it uses template text. The app never breaks on AI. |
 | Weather | **Open-Meteo** | Free, no key. Drives the replanning trigger. |
-| Hazard alerts | **GDACS**, **USGS** | Official feeds, free, no key. The source behind Travel Alert. |
+| Hazard alerts | **GDACS** | Official disaster feed, free, no key. The source behind Travel Alert. |
+| Trip intel | **UK FCDO travel advice** (GOV.UK Content API) + **NewsData.io** | Official entry rules and safety advice per country, plus recent travel news for the destination. |
 | Currency | **Frankfurter** (ECB rates) | Normalises expenses when a trip crosses currencies. |
-| Hosting / CI | Vercel Hobby + GitHub Actions | Zero-config deploys, preview URL per pull request, lint and typecheck on push. |
+| Hosting / CI | Vercel Hobby + GitHub Actions | Zero-config deploys and a preview URL per pull request. Every push runs lint, typecheck, unit tests, a production build and smoke tests; an uptime check runs every 30 minutes and the sample account is reset nightly. |
 
 ### System architecture
 
@@ -725,13 +733,16 @@ flowchart LR
     APP --> API["Route Handlers<br/>+ Server Actions"]
     API --> DB[("Supabase Postgres<br/>trips · places · memories<br/>members · places_cache · llm_cache")]
     API --> ST[("Supabase Storage<br/>photos")]
-    API --> AI["AI layer<br/>scoped prompts,<br/>typed outputs"]
-    AI --> GROQ["Groq<br/>memory book · insights<br/>itinerary ordering"]
+    API --> AI["AI layer<br/>facts computed in code,<br/>schema-checked outputs"]
+    AI --> N8N["n8n workflow<br/>model per task"]
+    N8N --> GROQ["Groq<br/>memory book · insights<br/>day titles · alerts"]
+    AI -.->|fallback| GROQ
     API --> PROV["Provider interfaces"]
     PROV --> OSM["Overpass / Nominatim"]
-    PROV --> ORS["OpenRouteService"]
+    PROV --> INTEL["FCDO / NewsData"]
+    PROV --> FX["Frankfurter"]
     PROV --> WX["Open-Meteo"]
-    PROV --> HAZ["GDACS / USGS"]
+    PROV --> HAZ["GDACS"]
     OSM -.->|cached once per city| DB
     DB --> MEM["Trip memory<br/>ratings · spend · pace"]
     MEM --> AI
@@ -744,6 +755,10 @@ one the app runs off its own database and cannot be broken by someone else's rat
 
 Four people, roughly one month. Deliberately narrow, and ordered so that if we run out of time we
 lose the least important thing.
+
+**Status at deployment (12 Oct): all three tiers are built and database-backed** — including the
+Tier 3 items we had planned to fake with seeded data: Community, public trips with per-field
+sharing, travel alerts, trip intel and PDF export. The plan below is kept as it was written.
 
 **Tier 1 — full stack, database-backed. This is the demo.**
 
@@ -771,6 +786,21 @@ lose the least important thing.
 **Explicitly not building this round:** AI landmark recognition as a metadata fallback, live crowd
 data, push notifications, native apps.
 
+### Quality and operations
+
+- **Security in the database:** row-level security on all 20 tables. Notes and individual
+  expenses are never public, even on a public trip; view-only members cannot upload; the sample
+  account cannot delete trips. Secret keys never reach the browser.
+- **Tests:** 30 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
+  itinerary scheduler, search parsing) and 12 smoke tests against the production build, run by
+  CI on every push.
+- **Monitoring:** `/api/health` checks the database and AI path; GitHub Actions calls it every 30
+  minutes. Vercel Analytics and Speed Insights are built in.
+- **Installable:** a PWA with its own icon, full-screen launch and an offline screen.
+- Setup, deployment and QA steps: [docs/DEPLOY.zh.md](docs/DEPLOY.zh.md),
+  [docs/QA-CHECKLIST.zh.md](docs/QA-CHECKLIST.zh.md), architecture in
+  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ### Honest limitations
 
 Stated up front, because a judge will ask.
@@ -783,8 +813,9 @@ Stated up front, because a judge will ask.
   this scales as-is.
 - **No third-party ratings or review counts.** OpenStreetMap does not carry them and we are not
   scraping a review site. Ratings in Tabiato are *yours*, which is consistent with the product.
-- **Community is a prototype surface this round.** Designed and specified; whether it is
-  database-backed by the deadline depends on Tiers 1 and 2 finishing first.
+- **The AI host sleeps.** n8n runs on a free Hugging Face Space that sleeps after about two days
+  without traffic, so the first AI call after a quiet spell is slow. The app waits, then falls back
+  to Groq directly, then to template text — slower, never broken.
 - **Crowd-level data is not live.** There is no official public API for foot traffic, and what
   circulates publicly is scraped from a maps web page, which is unstable and against terms. Any
   crowd signal we show is labelled an estimate.
@@ -796,11 +827,17 @@ Stated up front, because a judge will ask.
 ```
 .
 ├── README.md              # this file — the complete submission document
-└── docs
-    └── assets             # ideation diagrams, user flows, UI screens
+├── docs/                  # architecture, accessibility, deploy + QA guides, ideation assets
+├── supabase/schema.sql    # database, row-level security, storage rules — single source of truth
+├── n8n/                   # the AI workflow and how to host it for free
+├── .github/workflows/     # CI, uptime check, nightly sample-account reset
+└── web/                   # the Next.js app (Vercel root directory)
+    ├── src/app/           # routes and screens
+    ├── src/features/      # one folder per feature: trips, places, memory-book, planner, live, …
+    ├── src/lib/           # Supabase clients, AI gateway, shared helpers
+    ├── tests/             # unit and smoke tests
+    └── scripts/           # sample data and demo photos
 ```
-
-Application code lands in `src/` during the building phase.
 
 ---
 
@@ -815,8 +852,13 @@ courtesy, and is rendered in-app as well as here.
   [Nominatim](https://operations.osmfoundation.org/policies/nominatim/)
 - Map tiles by [OpenFreeMap](https://openfreemap.org/), rendered with
   [MapLibre GL JS](https://maplibre.org/)
-- Routing by [OpenRouteService](https://openrouteservice.org/)
 - Weather by [Open-Meteo](https://open-meteo.com/)
-- Hazard data from [GDACS](https://gdacs.org/) and
-  [USGS](https://www.usgs.gov/products/web-tools/apis)
+- Hazard data from [GDACS](https://gdacs.org/)
+- Travel advice from the [UK Foreign, Commonwealth & Development Office](https://www.gov.uk/foreign-travel-advice),
+  © Crown copyright, [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)
+- Travel news via [NewsData.io](https://newsdata.io/)
+- AI text by [Groq](https://groq.com/), orchestrated with [n8n](https://n8n.io/)
+- Sample-account photos from [Unsplash](https://unsplash.com/license) and
+  [Pexels](https://www.pexels.com/license/); photographers are credited in
+  [web/scripts/demo-photos/CREDITS.md](web/scripts/demo-photos/CREDITS.md)
 - Exchange rates from [Frankfurter](https://frankfurter.dev/), sourced from the ECB
