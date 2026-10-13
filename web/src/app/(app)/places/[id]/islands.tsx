@@ -96,14 +96,14 @@ export function ExpenseForm({ placeId, tripId, currency = "MYR" }: { placeId: st
   const [state, action, busy] = useActionState<ActionResult, FormData>(addExpense.bind(null, placeId, tripId), {});
   return (
     <form action={action} className="mt-2 rounded-[16px] bg-card p-3 shadow-card">
-      <div className="grid grid-cols-[auto_1fr_1.2fr] gap-2">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_minmax(0,1.2fr)] gap-2">
         <select name="currency" defaultValue={currency} aria-label="Currency" className="h-10 rounded-[10px] border border-line bg-card px-2 text-[12px]">
           {CURRENCIES.map((c) => <option key={c} value={c}>{c === "MYR" ? "RM" : c}</option>)}
         </select>
         <input name="amount" inputMode="decimal" placeholder="Amount" aria-label="Amount" required
-          className="h-10 rounded-[10px] border border-line px-3 text-[13px] focus:border-coral focus:outline-none" />
+          className="h-10 w-full min-w-0 rounded-[10px] border border-line px-3 text-[13px] focus:border-coral focus:outline-none" />
         <input name="label" placeholder="What for?" aria-label="What for" maxLength={60}
-          className="h-10 rounded-[10px] border border-line px-3 text-[13px] focus:border-coral focus:outline-none" />
+          className="h-10 w-full min-w-0 rounded-[10px] border border-line px-3 text-[13px] focus:border-coral focus:outline-none" />
       </div>
       <div className="mt-2">
         <select name="split" aria-label="Split between" defaultValue="1" className="h-10 w-full rounded-[10px] border border-line bg-card px-2 text-[12px]">
@@ -130,7 +130,7 @@ export function CommentForm({ placeId, tripId }: { placeId: string; tripId: stri
     <form action={action} className="flex items-center gap-2 rounded-full bg-card py-1.5 pl-4 pr-1.5 shadow-card">
       <input name="body" placeholder="Add to this spot…" aria-label="Comment" maxLength={2000} required
         className="h-9 flex-1 bg-transparent text-[13px] placeholder:text-muted focus:outline-none" />
-      <button disabled={busy} className="h-9 rounded-full bg-coral px-4 text-[12px] font-bold text-white">Post</button>
+      <button disabled={busy} className="h-9 shrink-0 rounded-full bg-coral px-4 text-[12px] font-bold text-white">Post</button>
       {state.error && <p role="alert" className="sr-only">{state.error}</p>}
     </form>
   );

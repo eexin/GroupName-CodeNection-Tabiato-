@@ -160,7 +160,7 @@ export default async function TripPage({ params, searchParams }: { params: Promi
         </div>
       </div>
 
-      {t.isMember && t.me?.role !== "viewer" && ongoing && <Fab href={`/trips/${id}/upload`} label="Add photos" icon="camera" />}
+      {t.isMember && t.me?.role !== "viewer" && ongoing && <Fab href={`/trips/${id}/upload`} label="Add photos" icon="camera" aboveNav={false} />}
     </main>
   );
 }

@@ -27,7 +27,7 @@ export function Placer({ tripId, photos, pins }: { tripId: string; photos: { id:
   return (
     <div className="px-6">
       <p className="text-[12px] text-muted">Pick the photos taken at the same spot, then tap where that was.</p>
-      <ul className="mt-3 flex gap-2 overflow-x-auto pb-1">
+      <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
         {photos.map((p) => (
           <li key={p.id} className="shrink-0">
             <button onClick={() => toggle(p.id)} aria-pressed={selected.has(p.id)}

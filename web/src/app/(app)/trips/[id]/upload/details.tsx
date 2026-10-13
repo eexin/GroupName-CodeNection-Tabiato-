@@ -15,7 +15,7 @@ export function MemoryDetails({ place, tripId, members, currency, onDone }: {
   const [state, action, busy] = useActionState<ActionResult, FormData>(saveMemoryDetails.bind(null, place.id, tripId), {});
   const [stars, setStars] = useState(0);
   useEffect(() => { if (state.ok) onDone(); }, [state.ok, onDone]);
-  const input = "h-11 w-full rounded-[12px] border border-line bg-card px-3 text-[13.5px] focus:border-coral focus:outline-none";
+  const input = "h-11 w-full min-w-0 rounded-[12px] border border-line bg-card px-3 text-[13.5px] focus:border-coral focus:outline-none";
   return (
     <form action={action} className="space-y-5 px-6">
       <div>
@@ -28,7 +28,7 @@ export function MemoryDetails({ place, tripId, members, currency, onDone }: {
       )}
       <section>
         <h2 className="mb-2 text-[11px] font-bold text-ink">Spent here</h2>
-        <div className="grid grid-cols-[auto_1fr_1.2fr] gap-2">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_minmax(0,1.2fr)] gap-2">
           <select name="currency" defaultValue={currency} aria-label="Currency" className="h-11 rounded-[12px] border border-line bg-card px-2 text-[12px]">
             {CURRENCIES.map((c) => <option key={c} value={c}>{c === "MYR" ? "RM" : c}</option>)}
           </select>

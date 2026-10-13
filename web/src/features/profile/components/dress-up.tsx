@@ -45,10 +45,10 @@ export function DressUp({ initial, usingPhoto, next }: { initial: Look; usingPho
   const swatches = (label: string, colors: readonly string[], names: readonly string[], value: number, pick: (i: number) => void) => (
     <fieldset>
       <legend className="mb-2 text-[11px] font-bold text-ink">{label}</legend>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2.5">
         {colors.map((c, i) => (
           <button key={c} type="button" aria-label={names[i]} aria-pressed={value === i} onClick={() => { pick(i); setLine(ATO_LINES.you); }}
-            className={`h-11 w-11 rounded-full ring-offset-2 ring-offset-paper ${value === i ? "ring-[3px] ring-coral" : "ring-1 ring-line"}`}
+            className={`h-10 w-10 rounded-full ring-offset-2 ring-offset-paper ${value === i ? "ring-[3px] ring-coral" : "ring-1 ring-line"}`}
             style={{ background: c }} />
         ))}
       </div>
@@ -68,10 +68,10 @@ export function DressUp({ initial, usingPhoto, next }: { initial: Look; usingPho
         </div>
       </section>
 
-      <nav aria-label="What to change" className="mt-4 flex gap-2 overflow-x-auto px-6 pb-1">
+      <nav aria-label="What to change" className="mt-4 flex gap-2 overflow-x-auto px-6 pb-1 no-scrollbar">
         {TABS.map((t) => (
           <button key={t} type="button" onClick={() => setTab(t)} aria-pressed={tab === t}
-            className={`min-h-[40px] shrink-0 rounded-full px-4 text-[12.5px] ${tab === t ? "bg-deep font-bold text-white" : "border border-line bg-card text-body"}`}>
+            className={`min-h-[40px] shrink-0 whitespace-nowrap rounded-full px-4 text-[12.5px] ${tab === t ? "bg-deep font-bold text-white" : "border border-line bg-card text-body"}`}>
             {t === "you" ? "You" : SLOT_LABEL[t]}
           </button>
         ))}

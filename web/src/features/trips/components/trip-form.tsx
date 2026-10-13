@@ -82,15 +82,17 @@ export function TripForm({ friends, members = [], initial }: { friends: Person[]
         )}
       </fieldset>
 
-      <h3 className="-mb-2 text-[11px] font-bold text-ink">Visibility</h3>
-      <label className="flex items-center justify-between rounded-[18px] bg-card p-4 shadow-card">
-        <span>
-          <span className="block text-[13.5px] font-medium text-ink">Share to Community</span>
-          <span className="block text-[11px] text-muted">Off — only you and invited friends</span>
-        </span>
-        <input type="checkbox" name="is_public" defaultChecked={initial?.is_public} className="peer sr-only" />
-        <span aria-hidden className="relative h-7 w-12 shrink-0 rounded-full bg-surface transition-colors peer-checked:bg-coral peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-coral after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5" />
-      </label>
+      <div>
+        <h3 className="mb-2 text-[11px] font-bold text-ink">Visibility</h3>
+        <label className="flex items-center justify-between rounded-[18px] bg-card p-4 shadow-card">
+          <span>
+            <span className="block text-[13.5px] font-medium text-ink">Share to Community</span>
+            <span className="block text-[11px] text-muted">Off: only you and people you invite. On: anyone on Tabiato can see it.</span>
+          </span>
+          <input type="checkbox" name="is_public" defaultChecked={initial?.is_public} className="peer sr-only" />
+          <span aria-hidden className="relative h-7 w-12 shrink-0 rounded-full bg-surface transition-colors peer-checked:bg-coral peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-coral after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5" />
+        </label>
+      </div>
 
       <FormMessage error={state.error} message={uploading ? "Uploading your cover…" : undefined} />
       <Submit pending="Saving…">{initial ? "Save trip" : "Create trip"}</Submit>

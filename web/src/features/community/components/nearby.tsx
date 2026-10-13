@@ -17,7 +17,7 @@ export function NearbyChip({ active }: { active: boolean }) {
           { timeout: 10000 },
         );
       }}
-      className={`min-h-[40px] rounded-full px-4 text-[12.5px] ${active ? "bg-coral font-bold text-white" : "border border-line bg-card text-body"}`}>
+      className={`min-h-[40px] shrink-0 whitespace-nowrap rounded-full px-4 text-[12.5px] ${active ? "bg-coral font-bold text-white" : "border border-line bg-card text-body"}`}>
       {busy ? "Locating…" : "Nearby"}
     </button>
   );

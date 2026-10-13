@@ -38,7 +38,8 @@ export function DesktopNav({ unread, qr, feedback }: { unread: number; qr: strin
       <div className="mt-auto rounded-[18px] bg-card p-4 shadow-card">
         <p className="text-[13px] font-bold text-ink">Made for your phone</p>
         <p className="mt-1 text-[11.5px] leading-snug text-muted">Recording a trip works best in your pocket. Scan to open Tabiato on your phone.</p>
-        {qr && <div className="mx-auto mt-3 w-36 [&_svg]:h-auto [&_svg]:w-full" role="img" aria-label="QR code to open Tabiato on your phone" dangerouslySetInnerHTML={{ __html: qr }} />}
+        {/* smaller on laptop-height screens, so the whole sidebar fits without being cut off */}
+        {qr && <div className="mx-auto mt-3 w-36 [@media(max-height:880px)]:w-24 [&_svg]:h-auto [&_svg]:w-full" role="img" aria-label="QR code to open Tabiato on your phone" dangerouslySetInnerHTML={{ __html: qr }} />}
       </div>
     </aside>
   );

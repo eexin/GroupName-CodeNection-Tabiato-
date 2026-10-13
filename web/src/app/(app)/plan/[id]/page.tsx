@@ -47,10 +47,10 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
       ) : (
         <div className="grid px-6 [grid-template-areas:'top'_'map'_'bottom'] lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-x-8 lg:px-10 lg:[grid-template-areas:'map_top'_'map_bottom'] lg:[grid-template-rows:auto_1fr]">
           <div className="[grid-area:top]">
-          <nav aria-label="Days" className="flex gap-2 overflow-x-auto pb-1">
+          <nav aria-label="Days" className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
             {Array.from({ length: days }, (_, i) => (
               <Link key={i} href={`/plan/${id}?day=${i + 1}`} aria-current={day === i + 1 ? "page" : undefined}
-                className={`shrink-0 rounded-full px-4 py-2 text-[12px] ${day === i + 1 ? "bg-deep font-bold text-white" : "border border-line bg-card text-body"}`}>
+                className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[12px] ${day === i + 1 ? "bg-deep font-bold text-white" : "border border-line bg-card text-body"}`}>
                 Day {i + 1}
               </Link>
             ))}

@@ -63,7 +63,45 @@ body {
   }
 }
 
-/* MapLibre attribution sits above the bottom sheet, not under it */
-.maplibregl-ctrl-bottom-right {
-  bottom: 380px !important;
+/* Fields never force their row wider than the screen: in a flex or grid row an input's default
+   minimum is its natural width (about 20 characters), which pushed buttons like Post and Send
+   off the edge on small phones. */
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+/* iOS Safari gives date and time inputs a fixed intrinsic width, which pushed the second
+   column of a two-column row off the screen (and zoomed the whole page out). */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  padding-inline: 12px;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+/* iOS zooms the whole page into any field set below 16px and leaves it zoomed. Phones get 16px
+   text in fields; the design sizes still apply with a mouse. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Swipeable rows of chips (days, filters, topics, dress-up tabs): they scroll sideways, but a
+   desktop scrollbar under a row of pills just looks broken. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

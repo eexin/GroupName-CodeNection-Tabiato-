@@ -77,6 +77,22 @@ function pinEl(pin: Pin, onSelect?: (id: string) => void) {
   return el;
 }
 
+/** Fit the pins into the part of the map that isn't covered (`inset`). */
+function frame(map: MLMap, pins: Pin[], zoom: number, inset: { top: number; bottom: number } | undefined, duration: number) {
+  const top = inset?.top ?? 0, bottom = inset?.bottom ?? 0;
+  if (pins.length === 1) map.easeTo({ center: [pins[0].lng, pins[0].lat], zoom: Math.max(zoom, 13), offset: [0, (top - bottom) / 2], duration });
+  else if (pins.length > 1) {
+    const b = new LngLatBounds();
+    pins.forEach((p) => b.extend([p.lng, p.lat]));
+    // never ask for more padding than the map has room for, or MapLibre refuses to fit
+    const h = map.getContainer().clientHeight;
+    const pad = { top: 90 + top, bottom: 60 + bottom, left: 50, right: 50 };
+    const room = h - pad.top - pad.bottom;
+    if (room < 60) { const cut = (60 - room) / 2; pad.top = Math.max(top + 24, pad.top - cut); pad.bottom = Math.max(bottom + 12, pad.bottom - cut); }
+    map.fitBounds(b, { padding: pad, maxZoom: 15, duration });
+  }
+}
+
 type Props = {
   pins: Pin[];
   onSelect?: (id: string) => void;
@@ -87,9 +103,13 @@ type Props = {
   zoom?: number;
   className?: string;
   atmosphere?: boolean;
+  /** false when the page shows the OSM credit itself (it must stay visible somewhere) */
+  attribution?: boolean;
+  /** extra space to keep clear when framing the pins, e.g. what a sheet or header covers */
+  fitInset?: { top: number; bottom: number };
 };
 
-export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], zoom = 2.6, className, atmosphere = true }: Props) {
+export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], zoom = 2.6, className, atmosphere = true, attribution = true, fitInset }: Props) {
   // server renders the default; the browser switches to the saved theme right after hydration
   const themeName = useSyncExternalStore(noSubscribe, themeFromCookie, () => "water");
   const theme = THEMES[themeName] ?? THEMES.water;
@@ -102,11 +122,13 @@ export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], 
   const pendingDraw = useRef<(() => void) | null>(null);
   const onPickRef = useRef(onPick);
   const onSelectRef = useRef(onSelect);
+  const fitInsetRef = useRef(fitInset);
 
   useEffect(() => {
     onPickRef.current = onPick;
     onSelectRef.current = onSelect;
     themeRef.current = theme;
+    fitInsetRef.current = fitInset;
   });
 
   // a theme change after the map loaded repaints it
@@ -122,7 +144,7 @@ export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], 
       style: STYLE_URL,
       center,
       zoom,
-      attributionControl: { compact: true },
+      attributionControl: attribution ? { compact: true } : false,
       dragRotate: false,
       pitchWithRotate: false,
     });
@@ -145,16 +167,20 @@ export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], 
           .setLngLat([p.lng, p.lat])
           .addTo(map),
       );
-      if (pins.length === 1) map.jumpTo({ center: [pins[0].lng, pins[0].lat], zoom: Math.max(zoom, 13) });
-      else if (pins.length > 1) {
-        const b = new LngLatBounds();
-        pins.forEach((p) => b.extend([p.lng, p.lat]));
-        map.fitBounds(b, { padding: { top: 90, bottom: 60, left: 50, right: 50 }, maxZoom: 15, duration: 0 });
-      }
+      frame(map, pins, zoom, fitInsetRef.current, 0);
     };
     if (ready.current) draw();
     else pendingDraw.current = draw;
   }, [pins, zoom]);
+
+  // the visible part of the map changed (a sheet slid over it): frame the pins in what's left
+  const insetKey = fitInset ? `${Math.round(fitInset.top)}:${Math.round(fitInset.bottom)}` : "";
+  useEffect(() => {
+    if (ready.current && mapRef.current && insetKey) frame(mapRef.current, pins, zoom, fitInsetRef.current, 300);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [insetKey]);
+
+
 
   useEffect(() => {
     const map = mapRef.current;
@@ -165,9 +191,10 @@ export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], 
 
   return (
     <div role="region" aria-label={`Map with ${pins.length} ${pins.length === 1 ? "pin" : "pins"}. The same places are listed below the map.`}
-      className={`relative overflow-hidden ${theme.bg} ${className ?? ""}`}>
+      className={`${/(^|\s)(absolute|fixed|sticky)(\s|$)/.test(className ?? "") ? "" : "relative"} overflow-hidden ${theme.bg} ${className ?? ""}`}>
       {/* inline, not Tailwind classes: MapLibre's stylesheet sets .maplibregl-map to position: relative
-          and outranks Tailwind's layered utilities, which collapsed this box to 0 px tall */}
+          and outranks Tailwind's layered utilities, which collapsed this box to 0 px tall. (For the
+          same reason the outer box only gets "relative" when the caller hasn't positioned it.) */}
       <div ref={box} style={{ position: "absolute", inset: 0 }} />
       {atmosphere && (
         <div aria-hidden className="pointer-events-none absolute inset-0"

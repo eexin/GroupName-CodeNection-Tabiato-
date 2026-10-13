@@ -24,7 +24,7 @@ export default async function CommunityPage({ searchParams }: { searchParams: Pr
   const cards = filter === "nearby" && !near ? [] : await getCommunity(supabase, user.id, filter, near);
   const chip = (f: Filter, label: string) => (
     <Link href={`/community?filter=${f}`} aria-current={filter === f ? "page" : undefined}
-      className={`grid min-h-[40px] place-items-center rounded-full px-4 text-[12.5px] ${filter === f ? "bg-coral font-bold text-white" : "border border-line bg-card text-body"}`}>{label}</Link>
+      className={`grid min-h-[40px] shrink-0 place-items-center whitespace-nowrap rounded-full px-4 text-[12.5px] ${filter === f ? "bg-coral font-bold text-white" : "border border-line bg-card text-body"}`}>{label}</Link>
   );
 
   return (
@@ -33,7 +33,7 @@ export default async function CommunityPage({ searchParams }: { searchParams: Pr
         <h1 className="text-[24px] font-bold text-ink">Community</h1>
         <Ato size={52} />
       </header>
-      <nav aria-label="Filter" className="mt-4 flex gap-2 overflow-x-auto pb-1">
+      <nav aria-label="Filter" className="-mx-6 mt-4 flex gap-2 overflow-x-auto px-6 pb-1 lg:mx-0 lg:px-0 no-scrollbar">
         {chip("foryou", "For you")}
         <NearbyChip active={filter === "nearby"} />
         {chip("budget", "Budget")}

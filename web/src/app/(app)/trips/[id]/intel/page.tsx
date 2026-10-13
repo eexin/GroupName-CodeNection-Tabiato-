@@ -70,10 +70,10 @@ Never invent rules or dates. Return JSON {"advice_note": string, "news": [{"i": 
     <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
       <BackHeader href={`/trips/${id}`} title="Trip intel" subtitle={`${country} · official advice and recent news`} />
       <div className="space-y-4 px-6">
-        <nav aria-label="Topics" className="flex gap-2 overflow-x-auto pb-1">
+        <nav aria-label="Topics" className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           {TABS.map(([k, label]) => (
             <Link key={k} href={`/trips/${id}/intel${k === "all" ? "" : `?tab=${k}`}`} aria-current={tab === k ? "page" : undefined}
-              className={`grid min-h-[40px] place-items-center rounded-full px-4 text-[12.5px] ${tab === k ? "bg-deep font-bold text-white" : "border border-line bg-card text-body"}`}>{label}</Link>
+              className={`grid min-h-[40px] shrink-0 place-items-center whitespace-nowrap rounded-full px-4 text-[12.5px] ${tab === k ? "bg-deep font-bold text-white" : "border border-line bg-card text-body"}`}>{label}</Link>
           ))}
         </nav>
         {finished && <p className="rounded-[14px] bg-surface px-4 py-3 text-[12.5px] text-body">This trip has ended. Intel stops when your trip ends — here&apos;s the last of it.</p>}

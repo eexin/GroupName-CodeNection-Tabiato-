@@ -19,7 +19,7 @@ export default async function MembersPage({ params, searchParams }: { params: Pr
   if (confirm === "leave" && t.isMember && !t.isOwner) {
     return (
       <main className="mx-auto grid min-h-dvh max-w-[430px] place-items-center lg:max-w-none bg-deeper/90 px-8">
-        <div className="w-full rounded-[26px] bg-card p-6 text-center shadow-sheet">
+        <div className="w-full max-w-[400px] rounded-[26px] bg-card p-6 text-center shadow-sheet">
           <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#a33a221f] text-[24px] font-bold text-coral-dark">!</div>
           <h1 className="mt-4 text-[21px] font-bold text-ink">Leave {t.trip.name}?</h1>
           <p className="mt-2 text-[12.5px] leading-relaxed text-body">

@@ -19,7 +19,7 @@ export function ThreadLive({ other }: { other: string }) {
       {state.error && <p role="alert" className="mb-2 text-[11.5px] text-coral-dark">{state.error}</p>}
       <div className="flex items-center gap-2 rounded-full bg-card py-1.5 pl-4 pr-1.5 shadow-card">
         <input name="body" placeholder="Write a message" aria-label="Message" maxLength={2000} required className="h-9 flex-1 bg-transparent text-[13.5px] placeholder:text-muted focus:outline-none" />
-        <button disabled={busy} className="h-9 rounded-full bg-coral px-4 text-[12px] font-bold text-white">Send</button>
+        <button disabled={busy} className="h-9 shrink-0 rounded-full bg-coral px-4 text-[12px] font-bold text-white">Send</button>
       </div>
     </form>
   );

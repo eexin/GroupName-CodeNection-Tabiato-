@@ -37,7 +37,7 @@ export function ButtonLink({ href, children, variant = "primary" }: { href: stri
 export function Field(props: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   const { label, ...rest } = props;
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="mb-1.5 block text-[11px] font-medium text-muted">{label}</span>
       <input
         {...rest}
@@ -123,10 +123,11 @@ export function Cover({ url, seed, className = "" }: { url: string | null; seed:
     : <span className={`block ${className}`} style={{ background: `linear-gradient(135deg, ${a}, ${b})` }} />;
 }
 
-export function Fab({ href, label, icon = "plus" }: { href: string; label: string; icon?: "plus" | "camera" }) {
+/** `aboveNav`: the page has the bottom tab bar, so the button sits above it; otherwise near the bottom. */
+export function Fab({ href, label, icon = "plus", aboveNav = true }: { href: string; label: string; icon?: "plus" | "camera"; aboveNav?: boolean }) {
   return (
     <Link href={href} aria-label={label}
-      className="fixed bottom-[92px] right-[max(1.25rem,calc(50%-215px+1.25rem))] z-30 grid h-14 w-14 lg:hidden place-items-center rounded-full bg-coral shadow-fab transition-transform active:scale-95">
+      className={`fixed ${aboveNav ? "bottom-[calc(92px+env(safe-area-inset-bottom))]" : "bottom-[calc(1.25rem+env(safe-area-inset-bottom))]"} right-[max(1.25rem,calc(50%-215px+1.25rem))] z-30 grid h-14 w-14 lg:hidden place-items-center rounded-full bg-coral shadow-fab transition-transform active:scale-95`}>
       {icon === "plus" ? (
         <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden><path d="M11 4v14M4 11h14" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" /></svg>
       ) : (
