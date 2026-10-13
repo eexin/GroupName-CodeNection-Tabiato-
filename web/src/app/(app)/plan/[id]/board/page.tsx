@@ -15,8 +15,8 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
   const { data: trip } = await supabase.from("trips").select("*").eq("id", id).maybeSingle();
   if (!trip) notFound();
   const { data: members } = await supabase.from("trip_members").select("user_id").eq("trip_id", id).eq("status", "joined");
-  const { data: profiles } = await supabase.from("profiles").select("id, display_name, travel_style").in("id", (members ?? []).map((m) => m.user_id));
-  const people = (profiles ?? []).map((p) => ({ ...person(p.id, p.display_name), style: (p.travel_style ?? {}) as TravelStyle }));
+  const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, travel_style").in("id", (members ?? []).map((m) => m.user_id));
+  const people = (profiles ?? []).map((p) => ({ ...person(p.id, p.display_name, p.avatar_url), style: (p.travel_style ?? {}) as TravelStyle }));
   const { data: pinned } = await supabase.from("plan_stops").select("name, added_by, fixed_day, fixed_time").eq("trip_id", id).eq("source", "user").not("fixed_day", "is", null);
   const nameOf = new Map(people.map((p) => [p.id, p.name.split(" ")[0]]));
   const conflicts = groupConflicts(

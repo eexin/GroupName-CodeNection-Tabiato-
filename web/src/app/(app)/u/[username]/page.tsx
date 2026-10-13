@@ -4,14 +4,14 @@ import { sendFriendRequest } from "@/features/friends/actions";
 import { Ato } from "@/components/ato";
 import { Avatar } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
-import { person } from "@/lib/people";
+import { person, withAvatars } from "@/lib/people";
 
 /** tabiato.app/u/<username> — the add-me link from Figma 22b/22c. */
 export default async function UserLinkPage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
   const { supabase, user } = await requireUser();
   const { data: found } = await supabase.rpc("find_profile", { q: `@${username}` });
-  const p = (found as { id: string; display_name: string }[] | null)?.[0];
+  const [p] = await withAvatars(supabase, ((found as { id: string; display_name: string }[] | null) ?? []).slice(0, 1));
   if (!p) {
     const { data: self } = await supabase.from("profiles").select("username").eq("id", user.id).single();
     if (self?.username === username.toLowerCase()) {
@@ -29,7 +29,7 @@ export default async function UserLinkPage({ params }: { params: Promise<{ usern
   const { data: rel } = await supabase.from("friendships").select("*")
     .or(`and(requester.eq.${user.id},addressee.eq.${p.id}),and(requester.eq.${p.id},addressee.eq.${user.id})`);
   const r = rel?.[0];
-  const pp = person(p.id, p.display_name);
+  const pp = person(p.id, p.display_name, p.avatar_url);
   return (
     <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col items-center justify-center gap-4 px-8 text-center">
       <Avatar p={pp} size={88} />

@@ -22,6 +22,7 @@ import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { extname, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { encodeLook, lookUrl, type Look } from "../src/lib/character";
 
 // ---------- env ----------
 if (existsSync(".env.local")) {
@@ -49,9 +50,9 @@ function ok(r: { error: { message: string } | null }, what: string) {
 }
 
 const FRIENDS = [
-  { key: "mx", email: "mingxun@tabiato.test", name: "Teoh Ming Xun", username: "mingxun", style: { budget: "mid", pace: "packed", interests: ["food", "culture"] } },
-  { key: "sk", email: "shoichik@tabiato.test", name: "Shoichik", username: "shoichik", style: { budget: "budget", pace: "balanced", interests: ["nature", "culture"] } },
-  { key: "jq", email: "jiaqi@tabiato.test", name: "Jiaqi", username: "jiaqi", style: { budget: "luxury", pace: "slow", interests: ["shopping", "food"] } },
+  { key: "mx", look: { skin: 2, hairColor: 0, items: { hair: "hair_short", hat: "hat_beanie", clothes: "clothes_hoodie" } } as Look, email: "mingxun@tabiato.test", name: "Teoh Ming Xun", username: "mingxun", style: { budget: "mid", pace: "packed", interests: ["food", "culture"] } },
+  { key: "sk", look: { skin: 1, hairColor: 1, items: { hair: "hair_bun", clothes: "clothes_tee", neck: "neck_camera", back: "back_backpack" } } as Look, email: "shoichik@tabiato.test", name: "Shoichik", username: "shoichik", style: { budget: "budget", pace: "balanced", interests: ["nature", "culture"] } },
+  { key: "jq", look: { skin: 0, hairColor: 0, items: { hair: "hair_long", glasses: "glasses_sun", clothes: "clothes_aloha", frame: "frame_gold" } } as Look, email: "jiaqi@tabiato.test", name: "Jiaqi", username: "jiaqi", style: { budget: "luxury", pace: "slow", interests: ["shopping", "food"] } },
 ] as const;
 type Key = (typeof FRIENDS)[number]["key"];
 
@@ -140,6 +141,7 @@ async function main() {
     // the sign-up trigger invents a handle; give them the readable one either way
     ok(await db.from("profiles").update({
       display_name: f.name, username: f.username, travel_style: f.style, onboarded_at: new Date().toISOString(),
+      avatar_url: lookUrl(f.look), settings: { auto_pin: true, friends_can_add: true, ato_insights: true, look: encodeLook(f.look) },
     }).eq("id", ids[f.key]), `profile ${f.name}`);
   }
   if (Object.values(ids).includes(owner.id)) throw new Error("That account is one of the three friends — name your own handle instead.");

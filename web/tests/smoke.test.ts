@@ -54,7 +54,7 @@ test("every private page sends a signed-out visitor to login", async () => {
     "/trips/new", "/trips/x", "/trips/x/upload", "/trips/x/book", "/trips/x/book/print", "/trips/x/alert", "/trips/x/intel",
     "/places/x", "/plan/x", "/plan/x/places", "/plan/x/build", "/plan/x/setup", "/trips/x/edit", "/trips/x/story",
     "/trips/x/reroute", "/trips/x/members", "/trips/x/options", "/privacy", "/u/someone", "/friends/add", "/onboarding",
-    "/community/x", "/messages", "/messages/x", "/search?q=rated%205%20stars", "/trips/x/share", "/trips/x/invite", "/join/abc"]) {
+    "/community/x", "/messages", "/messages/x", "/profile/avatar", "/search?q=rated%205%20stars", "/trips/x/share", "/trips/x/invite", "/join/abc"]) {
     const r = await get(p);
     assert.equal(r.status, 307, p);
     assert.match(r.headers.get("location") ?? "", /\/login(\?next=[^&]+)?$/, p);
@@ -105,3 +105,14 @@ test("client error reports are accepted", async () => {
   const r = await fetch(`${BASE}/api/client-error`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: "test", path: "/x" }) });
   assert.equal(r.status, 204);
 });
+
+test("characters are public SVG images, and unknown looks are refused", async () => {
+  const r = await get("/api/avatar/s2.c1.hair_long.hat_straw");
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get("content-type") ?? "", /image\/svg\+xml/);
+  assert.match(r.headers.get("cache-control") ?? "", /immutable/);
+  assert.match(await r.text(), /^<svg /);
+  assert.equal((await get("/api/avatar/%3Cscript%3E")).status, 404);
+  assert.equal((await get("/api/avatar/s99.c1")).status, 404);
+});
+

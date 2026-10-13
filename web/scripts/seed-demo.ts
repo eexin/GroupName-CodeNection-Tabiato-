@@ -12,6 +12,7 @@ import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { extname, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { encodeLook, lookUrl, type Look } from "../src/lib/character";
 
 // ---------- env ----------
 if (existsSync(".env.local")) {
@@ -166,6 +167,16 @@ async function places(tripId: string, specs: PlaceSpec[]) {
   return uploaded;
 }
 
+/** Everyone in the demo wears a character (Dress up), so judges see them on every screen. */
+const LOOKS: Record<Who, Look> = {
+  ex: { skin: 1, hairColor: 0, items: { hair: "hair_long", hat: "hat_straw", clothes: "clothes_aloha", ear: "ear_stud", back: "back_backpack" } },
+  mx: { skin: 2, hairColor: 0, items: { hair: "hair_short", hat: "hat_cap", clothes: "clothes_hoodie", neck: "neck_camera" } },
+  qi: { skin: 1, hairColor: 3, items: { hair: "hair_bob", glasses: "glasses_sun", ear: "ear_hoop", clothes: "clothes_tee", neck: "neck_scarf", frame: "frame_gold" } },
+  jl: { skin: 2, hairColor: 1, items: { hair: "hair_short", glasses: "glasses_round", clothes: "clothes_rain" } },
+  ky: { skin: 3, hairColor: 0, items: { hair: "hair_curly", hat: "hat_bucket", clothes: "clothes_aloha", neck: "neck_lei" } },
+};
+const SETTINGS = { auto_pin: true, friends_can_add: true, ato_insights: true };
+
 // ---------- main ----------
 async function main() {
   await reset();
@@ -175,7 +186,10 @@ async function main() {
     if (error || !created.user) throw new Error(`user ${p.email}: ${error?.message ?? "not created"}`);
     ids[key] = created.user.id;
     const handle = { ex: "eexin", mx: "max", qi: "qii", jl: "jim", ky: "kai" }[key];
-    ok(await db.from("profiles").update({ display_name: p.name, username: handle, travel_style: p.style, onboarded_at: new Date().toISOString() }).eq("id", ids[key]), "profile");
+    ok(await db.from("profiles").update({
+      display_name: p.name, username: handle, travel_style: p.style, onboarded_at: new Date().toISOString(),
+      avatar_url: lookUrl(LOOKS[key]), settings: { ...SETTINGS, look: encodeLook(LOOKS[key]) },
+    }).eq("id", ids[key]), "profile");
   }
 
   ok(await db.from("friendships").insert([

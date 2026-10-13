@@ -16,7 +16,7 @@ export async function travelledWith(supabase: SupabaseClient, userId: string) {
   const firstTrip = new Map<string, string>();
   for (const o of others ?? []) if (!known.has(o.user_id) && !firstTrip.has(o.user_id)) firstTrip.set(o.user_id, o.trip_id);
   if (!firstTrip.size) return [];
-  const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", [...firstTrip.keys()]);
+  const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", [...firstTrip.keys()]);
   const tripName = new Map((trips ?? []).map((t) => [t.id, t.name]));
-  return (profiles ?? []).slice(0, 5).map((p) => ({ ...person(p.id, p.display_name), trip: tripName.get(firstTrip.get(p.id)!) ?? "a trip" }));
+  return (profiles ?? []).slice(0, 5).map((p) => ({ ...person(p.id, p.display_name, p.avatar_url), trip: tripName.get(firstTrip.get(p.id)!) ?? "a trip" }));
 }

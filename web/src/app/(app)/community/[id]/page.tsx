@@ -22,7 +22,7 @@ export default async function PublicTripPage({ params }: { params: Promise<{ id:
   if (!t || (!t.trip.is_public && !t.isMember)) notFound();
   const authorId = t.trip.owner_id;
   const [{ data: author }, { count: authorTrips }, { count: followers }, { data: iFollow }, { count: likes }, { data: myLike }, { data: mySave }, spend] = await Promise.all([
-    supabase.from("profiles").select("id, display_name").eq("id", authorId).single(),
+    supabase.from("profiles").select("id, display_name, avatar_url").eq("id", authorId).single(),
     supabase.from("trips").select("id", { count: "exact", head: true }).eq("owner_id", authorId).eq("is_public", true),
     supabase.from("follows").select("follower", { count: "exact", head: true }).eq("followee", authorId),
     supabase.from("follows").select("follower").eq("follower", user.id).eq("followee", authorId).maybeSingle(),
@@ -31,7 +31,7 @@ export default async function PublicTripPage({ params }: { params: Promise<{ id:
     supabase.from("saves").select("user_id").eq("trip_id", id).eq("user_id", user.id).maybeSingle(),
     sharedSpend(supabase, id),
   ]);
-  const a = person(authorId, author?.display_name);
+  const a = person(authorId, author?.display_name, author?.avatar_url);
   const len = days(t.trip.start_date, t.trip.end_date);
   const route = [...t.places].sort((x, y) => (x.first_seen_at ?? "").localeCompare(y.first_seen_at ?? ""));
   const highlights = t.places.filter((p) => p.photos > 0).sort((x, y) => (y.rating ?? 0) - (x.rating ?? 0)).slice(0, 3);

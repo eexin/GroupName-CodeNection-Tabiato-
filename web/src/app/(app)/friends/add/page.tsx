@@ -5,7 +5,7 @@ import { AtoNote, Avatar, BackHeader } from "@/components/ui";
 import { CopyButton } from "@/components/copy-button";
 import { requireUser } from "@/features/auth/guards";
 import { QrScanner } from "@/features/friends/components/qr-scanner";
-import { person } from "@/lib/people";
+import { person, withAvatars } from "@/lib/people";
 
 /** 22c Add friend — by @username, exact email or name; your link and QR; people you travelled with. */
 export default async function AddFriendPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
@@ -18,12 +18,14 @@ export default async function AddFriendPage({ searchParams }: { searchParams: Pr
     supabase.from("friendships").select("*"),
     term.length >= 3 ? supabase.rpc("find_profile", { q: term }) : Promise.resolve({ data: [] }),
     clean.length >= 2 && !term.includes("@")
-      ? supabase.from("profiles").select("id, display_name, username").ilike("display_name", `%${clean}%`).neq("id", user.id).limit(20)
+      ? supabase.from("profiles").select("id, display_name, username, avatar_url").ilike("display_name", `%${clean}%`).neq("id", user.id).limit(20)
       : Promise.resolve({ data: [] }),
     travelledWith(supabase, user.id),
   ]);
-  const found = new Map<string, { id: string; display_name: string }>();
-  for (const p of [...((exact.data as { id: string; display_name: string }[]) ?? []), ...((byName.data as { id: string; display_name: string }[]) ?? [])]) found.set(p.id, p);
+  type Found = { id: string; display_name: string; avatar_url: string | null };
+  const found = new Map<string, Found>();
+  const exactRows = await withAvatars(supabase, (exact.data as { id: string; display_name: string }[]) ?? []);
+  for (const p of [...exactRows, ...((byName.data as Found[]) ?? [])]) found.set(p.id, p);
   const status = new Map<string, string>();
   for (const f of rel ?? []) {
     const other = f.requester === user.id ? f.addressee : f.requester;
@@ -32,8 +34,8 @@ export default async function AddFriendPage({ searchParams }: { searchParams: Pr
   const link = me?.username ? await profileLink(me.username) : null;
   const qr = link ? await qrSvg(link) : null;
 
-  const Row = ({ id, name, sub }: { id: string; name: string; sub?: string }) => {
-    const pp = person(id, name);
+  const Row = ({ id, name, avatar, sub }: { id: string; name: string; avatar?: string | null; sub?: string }) => {
+    const pp = person(id, name, avatar);
     const s = status.get(id);
     return (
       <li className="flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">
@@ -66,7 +68,7 @@ export default async function AddFriendPage({ searchParams }: { searchParams: Pr
         </form>
         {term.length >= 2 && (
           <ul className="mt-4 space-y-3">
-            {[...found.values()].map((p) => <Row key={p.id} id={p.id} name={p.display_name} />)}
+            {[...found.values()].map((p) => <Row key={p.id} id={p.id} name={p.display_name} avatar={p.avatar_url} />)}
             {!found.size && <li className="text-[12.5px] text-muted">No one matches &ldquo;{term}&rdquo;. Email search needs the full address.</li>}
           </ul>
         )}
@@ -97,7 +99,7 @@ export default async function AddFriendPage({ searchParams }: { searchParams: Pr
           <section className="mt-6">
             <h2 className="text-[11px] font-bold text-ink">You travelled with them</h2>
             <p className="mb-2 text-[10.5px] text-muted">Not friends yet — add them to share future trips.</p>
-            <ul className="space-y-3">{met.map((m) => <Row key={m.id} id={m.id} name={m.name} sub={`Met on ${m.trip}`} />)}</ul>
+            <ul className="space-y-3">{met.map((m) => <Row key={m.id} id={m.id} name={m.name} avatar={m.avatar} sub={`Met on ${m.trip}`} />)}</ul>
           </section>
         )}
 
@@ -110,13 +112,13 @@ export default async function AddFriendPage({ searchParams }: { searchParams: Pr
 
 async function AskingRows({ ids }: { ids: string[] }) {
   const { supabase } = await requireUser();
-  const { data } = await supabase.from("profiles").select("id, display_name").in("id", ids);
+  const { data } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
   return (
     <section className="mt-6">
       <h2 className="mb-2 text-[11px] font-bold text-ink">Waiting on you</h2>
       <ul className="space-y-3">
         {(data ?? []).map((p) => {
-          const pp = person(p.id, p.display_name);
+          const pp = person(p.id, p.display_name, p.avatar_url);
           return (
             <li key={p.id} className="flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">
               <Avatar p={pp} />

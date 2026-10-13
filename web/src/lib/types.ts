@@ -14,7 +14,13 @@ export type Profile = {
 };
 
 /** Figma 24 MEMORY switches. Missing keys mean "on". */
-export type Settings = { auto_pin?: boolean; friends_can_add?: boolean; ato_insights?: boolean; map_theme?: "water" | "forest" | "night" };
+export type Settings = {
+  auto_pin?: boolean; friends_can_add?: boolean; ato_insights?: boolean; map_theme?: "water" | "forest" | "night";
+  /** The last uploaded photo, kept so "Use my photo" works after switching to the character. */
+  photo_url?: string;
+  /** The saved character look code (lib/character), kept while the photo is showing. */
+  look?: string;
+};
 export const settingOn = (s: Settings | null | undefined, k: keyof Settings) => s?.[k] !== false;
 
 export type TravelStyle = {

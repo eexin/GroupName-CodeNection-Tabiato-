@@ -19,9 +19,9 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const friends = all.filter((f) => f.status === "accepted");
   const ids = all.map((f) => (f.requester === user.id ? f.addressee : f.requester));
   const { data: profiles } = ids.length
-    ? await supabase.from("profiles").select("id, display_name").in("id", ids)
-    : { data: [] as { id: string; display_name: string }[] };
-  const who = new Map((profiles ?? []).map((p) => [p.id, person(p.id, p.display_name)]));
+    ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids)
+    : { data: [] as { id: string; display_name: string; avatar_url: string | null }[] };
+  const who = new Map((profiles ?? []).map((p) => [p.id, person(p.id, p.display_name, p.avatar_url)]));
   const other = (f: { requester: string; addressee: string }) => who.get(f.requester === user.id ? f.addressee : f.requester)!;
   const { data: me } = await supabase.from("profiles").select("username").eq("id", user.id).single();
   const link = me?.username ? await profileLink(me.username) : null;

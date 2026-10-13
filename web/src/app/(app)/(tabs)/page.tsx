@@ -6,7 +6,7 @@ import { TripRow } from "@/features/trips/components/trip-rows";
 import { ButtonLink, Fab } from "@/components/ui";
 import { requireProfile } from "@/features/auth/guards";
 import { getInvites, getMyTrips } from "@/features/trips/data";
-import { initials } from "@/lib/people";
+import { avatarFor } from "@/lib/people";
 
 /** 05 Home — Memory Map, and 06 when there are no trips yet. */
 export default async function HomePage() {
@@ -33,8 +33,8 @@ export default async function HomePage() {
               <circle cx="2" cy="14" r="2.2" fill="#E8623F" /><circle cx="16" cy="10" r="2.2" fill="#0E4C55" />
             </svg>
           </Link>
-          <Link href="/profile" aria-label="Your profile" className="grid h-[34px] w-[34px] place-items-center rounded-full bg-deep text-[12px] font-bold text-white">
-            {initials(profile.display_name)}
+          <Link href="/profile" aria-label="Your profile" className="block h-[34px] w-[34px] overflow-hidden rounded-full bg-aqua-light shadow-card">
+            <img src={avatarFor(profile.id, profile.avatar_url)} alt="" className="h-full w-full object-cover" />
           </Link>
         </div>
       </header>

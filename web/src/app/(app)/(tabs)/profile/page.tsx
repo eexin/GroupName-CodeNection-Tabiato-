@@ -3,10 +3,11 @@ import { signOut } from "@/features/auth/actions";
 import { requireProfile } from "@/features/auth/guards";
 import { setMapTheme, setSetting } from "@/features/profile/settings";
 import { InstallHint } from "@/components/pwa";
-import { AvatarPicker } from "@/features/profile/components/avatar-picker";
+import { AvatarActions, ProfilePicture } from "@/features/profile/components/avatar-picker";
 import { settingOn, type Settings } from "@/lib/types";
 import { getMyTrips } from "@/features/trips/data";
-import { initials } from "@/lib/people";
+import { avatarFor } from "@/lib/people";
+import { lookFromUrl } from "@/lib/character";
 
 const THEMES = [
   { id: "water", name: "Water World", colors: ["#7FC9C2", "#0E4C55"] },
@@ -42,11 +43,16 @@ export default async function ProfilePage() {
           <form action={signOut}><button className="min-h-[40px] rounded-full bg-white/15 px-4 text-[12px] font-bold">Logout</button></form>
         </div>
         <div className="mt-5 flex items-center gap-4">
-          <AvatarPicker userId={user.id} current={profile.avatar_url} initials={initials(profile.display_name)} size={68} />
-          <div>
-            <p className="text-[20px] font-bold">{profile.display_name}</p>
-            <p className="text-[11.5px] text-[#8fbdb8]">{user.email}</p>
+          <ProfilePicture src={avatarFor(user.id, profile.avatar_url)} size={68} />
+          <div className="min-w-0">
+            <p className="truncate text-[20px] font-bold">{profile.display_name}</p>
+            <p className="truncate text-[11.5px] text-[#8fbdb8]">{user.email}</p>
           </div>
+        </div>
+        <div className="mt-4">
+          <AvatarActions userId={user.id} next="/profile"
+            showing={profile.avatar_url && !lookFromUrl(profile.avatar_url) ? "photo" : "character"}
+            hasPhoto={Boolean(profile.settings?.photo_url || (profile.avatar_url && !lookFromUrl(profile.avatar_url)))} />
         </div>
         <dl className="mt-6 grid grid-cols-3 text-center">
           {stats.map(([n, l]) => (

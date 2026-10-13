@@ -1,4 +1,6 @@
-import { AvatarPicker } from "@/features/profile/components/avatar-picker";
+import { AvatarActions, ProfilePicture } from "@/features/profile/components/avatar-picker";
+import { avatarFor } from "@/lib/people";
+import { lookFromUrl } from "@/lib/character";
 import { requireUser } from "@/features/auth/guards";
 import { BackHeader } from "@/components/ui";
 import type { Profile } from "@/lib/types";
@@ -13,7 +15,12 @@ export default async function OnboardingPage() {
     <main className="mx-auto min-h-dvh max-w-[430px] pb-10">
       <BackHeader href={profile?.onboarded_at ? "/profile" : "/welcome"} title={profile?.onboarded_at ? "Travel profile" : "Set up your profile"} />
       <div className="px-6">
-        <div className="mb-5 flex justify-center"><AvatarPicker userId={user.id} current={profile?.avatar_url ?? null} initials={(profile?.display_name || "?").slice(0, 2).toUpperCase()} size={84} /></div>
+        <div className="mb-5 flex flex-col items-center gap-3">
+          <ProfilePicture src={avatarFor(user.id, profile?.avatar_url)} size={84} />
+          <AvatarActions userId={user.id} next="/onboarding" tone="light"
+            showing={profile?.avatar_url && !lookFromUrl(profile.avatar_url) ? "photo" : "character"}
+            hasPhoto={Boolean(profile?.settings?.photo_url || (profile?.avatar_url && !lookFromUrl(profile.avatar_url)))} />
+        </div>
         <OnboardingForm name={profile?.display_name ?? ""} username={profile?.username ?? ""} style={profile?.travel_style ?? {}} />
       </div>
     </main>

@@ -468,3 +468,48 @@ test("without Ato, a headline must name the place and be about travel", () => {
   assert.equal(looksRelevant("Japan's central bank holds rates", places), false);                  // not travel
 });
 
+import { ITEMS, SLOTS, decodeLook, encodeLook, lookFromSeed, lookFromUrl, lookUrl, randomLook, renderLook } from "../src/lib/character";
+import { avatarFor, person } from "../src/lib/people";
+
+test("a character look survives the round trip through its URL code", () => {
+  const look = { skin: 3, hairColor: 4, items: { hair: "hair_bun", hat: "hat_straw", neck: "neck_lei", back: "back_backpack" } };
+  const code = encodeLook(look);
+  assert.equal(code, "s3.c4.hair_bun.hat_straw.neck_lei.back_backpack");
+  assert.deepEqual(decodeLook(code), look);
+  assert.deepEqual(lookFromUrl(lookUrl(look)), look);
+  assert.equal(lookFromUrl("https://x.supabase.co/storage/v1/object/public/avatars/u/a.jpg"), null); // a photo
+});
+
+test("unknown parts of a look are ignored, and one item per slot wins", () => {
+  assert.equal(decodeLook("s9.c1"), null);             // no such skin
+  assert.equal(decodeLook("<svg onload=x>"), null);
+  assert.deepEqual(decodeLook("s0.c0.hat_cap.hat_straw.<script>.hair_pixel"), { skin: 0, hairColor: 0, items: { hat: "hat_straw" } });
+  assert.equal(encodeLook({ skin: 0, hairColor: 0, items: { hat: "glasses_sun" } }), "s0.c0"); // item in the wrong slot
+});
+
+test("everyone without a photo gets the same character every time, and a photo always wins", () => {
+  assert.deepEqual(lookFromSeed("user-1"), lookFromSeed("user-1"));
+  assert.notDeepEqual(lookFromSeed("user-1"), lookFromSeed("user-2"));
+  assert.match(avatarFor("user-1", null), /^\/api\/avatar\/s\d\.c\d\./);
+  assert.equal(avatarFor("user-1", "https://x/photo.jpg"), "https://x/photo.jpg");
+  assert.equal(person("user-1", "Max").avatar, avatarFor("user-1", null));
+});
+
+test("Surprise me only ever picks real items, one per slot", () => {
+  let seed = 7;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 50; i++) {
+    const look = randomLook(rand);
+    for (const [slot, key] of Object.entries(look.items)) if (key) assert.equal(ITEMS[key].slot, slot);
+    assert.ok(look.items.clothes, "always dressed");
+  }
+});
+
+test("the character SVG has no scripts or links and draws every slot's item", () => {
+  const all = Object.fromEntries(SLOTS.map((s) => [s, Object.keys(ITEMS).find((k) => ITEMS[k].slot === s)]));
+  for (const view of ["bust", "full"] as const) {
+    const svg = renderLook({ skin: 5, hairColor: 5, items: all }, view);
+    assert.match(svg, /^<svg xmlns='http:\/\/www\.w3\.org\/2000\/svg'/);
+    assert.doesNotMatch(svg, /<script|on\w+=|href=/i);
+  }
+});

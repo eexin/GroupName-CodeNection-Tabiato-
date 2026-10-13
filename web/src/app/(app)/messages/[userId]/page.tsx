@@ -7,12 +7,12 @@ import { ThreadLive } from "./live";
 export default async function ThreadPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
   const { supabase, user } = await requireUser();
-  const { data: other } = await supabase.from("profiles").select("id, display_name").eq("id", userId).maybeSingle();
+  const { data: other } = await supabase.from("profiles").select("id, display_name, avatar_url").eq("id", userId).maybeSingle();
   if (!other || other.id === user.id) notFound();
   const { data: msgs } = await supabase.from("messages").select("*")
     .or(`and(sender.eq.${user.id},recipient.eq.${userId}),and(sender.eq.${userId},recipient.eq.${user.id})`)
     .order("created_at").limit(300);
-  const p = person(other.id, other.display_name);
+  const p = person(other.id, other.display_name, other.avatar_url);
   return (
     <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-28">
       <BackHeader href="/messages" title={p.name} />

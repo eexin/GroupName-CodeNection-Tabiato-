@@ -7,7 +7,7 @@ import { Avatar, BackHeader, buttonClass } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
 import { getFriends } from "@/features/trips/friends";
 import { origin } from "@/lib/origin";
-import { person } from "@/lib/people";
+import { person, withAvatars } from "@/lib/people";
 
 /** 20 Invite friends — search your friends or an email, or share a join link. */
 export default async function InvitePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ q?: string }> }) {
@@ -33,7 +33,8 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
   const status = new Map((members ?? []).map((m) => [m.user_id, m.status]));
   const list = [
     ...friends.filter((f) => !term || f.name.toLowerCase().includes(term.toLowerCase())),
-    ...((found.data as { id: string; display_name: string }[]) ?? []).filter((p) => !friends.some((f) => f.id === p.id)).map((p) => person(p.id, p.display_name)),
+    ...(await withAvatars(supabase, ((found.data as { id: string; display_name: string }[]) ?? []).filter((p) => !friends.some((f) => f.id === p.id))))
+      .map((p) => person(p.id, p.display_name, p.avatar_url)),
   ];
 
   return (

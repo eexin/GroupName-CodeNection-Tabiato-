@@ -684,6 +684,13 @@ lines and district labels preserved, with light rays, a seabed, coral and drifti
 on top as atmosphere. **Water World** is the default; the theme is switchable from the profile,
 and the goldfish swims through whichever one you pick.
 
+**Your character.** No photo? Everyone gets a travel character instead of initials, drawn in
+Tabiato's colours with Ato's eyes. *Dress up* (from Profile or onboarding) offers six skin tones,
+six hair colours and 22 free items — sun hats, sunnies, an aloha shirt, a flower lei, a camera,
+a backpack — with Ato commenting and a *Surprise me* button. It is a profile picture like any
+other, so it shows on every member list, comment and community card; switching back to a photo
+deletes nothing.
+
 </td>
 </tr>
 </table>
@@ -791,7 +798,7 @@ data, push notifications, native apps.
 - **Security in the database:** row-level security on all 20 tables. Notes and individual
   expenses are never public, even on a public trip; view-only members cannot upload; the sample
   account cannot delete trips. Secret keys never reach the browser.
-- **Tests:** 46 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
+- **Tests:** 51 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
   AI itinerary checks and the rules planner, search parsing) and 12 smoke tests against the production build, run by
   CI on every push.
 - **Monitoring:** `/api/health` checks the database and AI path; GitHub Actions calls it every 30

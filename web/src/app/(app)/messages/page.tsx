@@ -14,8 +14,8 @@ export default async function InboxPage() {
     if (m.recipient === user.id && !m.read_at) t.unread++;
     threads.set(other, t);
   }
-  const { data: people } = threads.size ? await supabase.from("profiles").select("id, display_name").in("id", [...threads.keys()]) : { data: [] as { id: string; display_name: string }[] };
-  const who = new Map((people ?? []).map((p) => [p.id, person(p.id, p.display_name)]));
+  const { data: people } = threads.size ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", [...threads.keys()]) : { data: [] as { id: string; display_name: string; avatar_url: string | null }[] };
+  const who = new Map((people ?? []).map((p) => [p.id, person(p.id, p.display_name, p.avatar_url)]));
   return (
     <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
       <BackHeader href="/profile" title="Messages" />

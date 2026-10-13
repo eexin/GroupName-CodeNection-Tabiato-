@@ -40,7 +40,7 @@ export async function getCommunity(supabase: SupabaseClient, userId: string, fil
     supabase.from("likes").select("trip_id, user_id").in("trip_id", ids),
     supabase.from("saves").select("trip_id").eq("user_id", userId),
     supabase.from("follows").select("followee").eq("follower", userId),
-    supabase.from("profiles").select("id, display_name").in("id", [...new Set(trips.map((t) => t.owner_id))]),
+    supabase.from("profiles").select("id, display_name, avatar_url").in("id", [...new Set(trips.map((t) => t.owner_id))]),
     supabase.from("places").select("trip_id, name, first_seen_at").in("trip_id", ids).order("first_seen_at"),
     supabase.from("photos").select("trip_id, storage_path").in("trip_id", ids).order("created_at"),
   ]);
@@ -48,7 +48,7 @@ export async function getCommunity(supabase: SupabaseClient, userId: string, fil
   for (const t of trips) if (t.cover_path) cover.set(t.id, t.cover_path);
   for (const p of photos ?? []) if (!cover.has(p.trip_id)) cover.set(p.trip_id, p.storage_path);
   const urls = await signedUrls(supabase, [...cover.values()]);
-  const who = new Map((authors ?? []).map((a) => [a.id, person(a.id, a.display_name)]));
+  const who = new Map((authors ?? []).map((a) => [a.id, person(a.id, a.display_name, a.avatar_url)]));
   const followed = new Set((follows ?? []).map((f) => f.followee));
   const savedSet = new Set((saves ?? []).map((s) => s.trip_id));
   const spends = await Promise.all(trips.map((t) => sharedSpend(supabase, t.id)));
