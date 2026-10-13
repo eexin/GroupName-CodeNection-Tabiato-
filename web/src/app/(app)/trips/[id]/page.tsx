@@ -36,6 +36,8 @@ export default async function TripPage({ params, searchParams }: { params: Promi
   const timeline = view === "timeline";
   const finished = t.trip.status === "finished";
   const ongoing = t.trip.status === "ongoing";
+  // planned trips redirect to the planner above, so here the trip is under way or over
+  const canAdd = t.isMember && t.me?.role !== "viewer";
   const joined = t.members.filter((m) => m.status === "joined");
   const pins = t.places.map((p) => ({ id: p.id, lat: p.lat, lng: p.lng, count: p.photos, label: p.name }));
 
@@ -121,7 +123,7 @@ export default async function TripPage({ params, searchParams }: { params: Promi
 
         {t.places.length === 0 ? (
           <Empty title="No places yet"
-            action={t.isMember && ongoing ? <ButtonLink href={`/trips/${id}/upload`}>Add photos</ButtonLink> : undefined}>
+            action={canAdd ? <ButtonLink href={`/trips/${id}/upload`}>Add photos</ButtonLink> : undefined}>
             Add photos and I&apos;ll group them into the places you visited.
           </Empty>
         ) : timeline ? (
@@ -154,13 +156,18 @@ export default async function TripPage({ params, searchParams }: { params: Promi
           </>
         )}
 
+        {/* after the trip: photos often arrive later, so adding stays one tap away, below the places */}
+        {finished && canAdd && t.places.length > 0 && (
+          <div className="mt-5"><ButtonLink href={`/trips/${id}/upload`}>Add photos</ButtonLink></div>
+        )}
+
         {ongoing && t.isOwner && t.places.length > 0 && (
           <Link href={`/trips/${id}/end`} className="mt-6 block text-center text-[12.5px] font-bold text-coral-dark">End this trip</Link>
         )}
         </div>
       </div>
 
-      {t.isMember && t.me?.role !== "viewer" && ongoing && <Fab href={`/trips/${id}/upload`} label="Add photos" icon="camera" aboveNav={false} />}
+      {canAdd && ongoing && <Fab href={`/trips/${id}/upload`} label="Add photos" icon="camera" aboveNav={false} />}
     </main>
   );
 }

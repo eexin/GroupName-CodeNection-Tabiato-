@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/features/auth/guards";
 import { clusterPhotos } from "@/features/places/cluster";
 import { nameUnnamedPlaces } from "@/features/places/geocode";
+import { placeFromLink, searchPlaces, type SearchHit } from "@/features/planner/osm";
 
 const ms = (iso: string | null) => (iso ? new Date(iso).getTime() : null);
 const iso = (t: number | null) => (t === null ? null : new Date(t).toISOString());
@@ -58,8 +59,12 @@ export async function clusterTrip(tripId: string) {
   return { places: result.newPlaces.length, photos: result.assignments.length, top: top as { id: string; name: string; first_seen_at: string | null } | null };
 }
 
-/** The user placed photos by hand — record that honestly, then regroup. */
-export async function placePhotos(tripId: string, photoIds: string[], lat: number, lng: number) {
+/**
+ * The user placed photos by hand — record that honestly, then regroup. `name` is the place they
+ * searched for and picked; a place made only of these photos takes that name instead of the
+ * district the map would otherwise give it.
+ */
+export async function placePhotos(tripId: string, photoIds: string[], lat: number, lng: number, name?: string) {
   const { supabase } = await requireUser();
   if (!photoIds.length) return { places: 0, photos: 0, top: null };
   await supabase
@@ -67,5 +72,31 @@ export async function placePhotos(tripId: string, photoIds: string[], lat: numbe
     .update({ lat, lng, location_source: "manual" })
     .in("id", photoIds)
     .eq("trip_id", tripId);
-  return clusterTrip(tripId);
+  const result = await clusterTrip(tripId);
+  const label = name?.trim().slice(0, 80);
+  if (label) {
+    const { data: placed } = await supabase.from("photos").select("place_id").in("id", photoIds).not("place_id", "is", null).limit(1);
+    const placeId = placed?.[0]?.place_id as string | undefined;
+    if (placeId) {
+      const { count } = await supabase.from("photos").select("id", { count: "exact", head: true }).eq("place_id", placeId);
+      if (count === photoIds.length) await supabase.from("places").update({ name: label }).eq("id", placeId);
+    }
+  }
+  return result;
+}
+
+/**
+ * Place search for photos without a location: the user types a name (or pastes a Google Maps
+ * link) and picks a result — it is only ever a suggestion until they confirm it. Searches run
+ * when they press Search, never per keystroke (Nominatim's usage policy).
+ */
+export async function findPlace(q: string, near?: { lat: number; lng: number } | null): Promise<SearchHit[]> {
+  await requireUser();
+  const term = q.trim().slice(0, 200);
+  if (/^https?:\/\//i.test(term)) {
+    const hit = await placeFromLink(term);
+    return hit ? [hit] : [];
+  }
+  if (term.length < 2) return [];
+  return (await searchPlaces(term, near ?? undefined)).slice(0, 5);
 }

@@ -70,7 +70,7 @@ function pinEl(pin: Pin, onSelect?: (id: string) => void) {
     ? `<span class="mt-1 max-w-[110px] truncate rounded-full bg-white/95 px-2.5 py-0.5 text-[10px] font-bold text-deep shadow-sm">${escapeHtml(pin.label)}</span>`
     : "";
   el.innerHTML = `
-    <span class="relative grid h-11 w-11 place-items-center rounded-full bg-deep/90 text-[13px] font-bold text-white ring-2 ring-white/90 shadow-[0_4px_10px_rgba(14,76,85,0.3)] transition-transform group-hover:scale-110 group-focus-visible:scale-110">
+    <span class="relative grid h-11 w-11 place-items-center rounded-full bg-deep/90 text-[13px] font-bold text-white ring-2 ring-white/90 shadow-[0_4px_10px_rgba(14,76,85,0.3)] transition-transform group-hover:scale-110 group-focus-visible:scale-110 group-focus-visible:ring-[3px] group-focus-visible:ring-coral">
       <span class="absolute left-2 top-1.5 h-2.5 w-2.5 rounded-full bg-white/50"></span>${pin.count}
     </span>${label}`;
   if (onSelect) el.addEventListener("click", (e) => { e.stopPropagation(); onSelect(pin.id); });
@@ -107,9 +107,11 @@ type Props = {
   attribution?: boolean;
   /** extra space to keep clear when framing the pins, e.g. what a sheet or header covers */
   fitInset?: { top: number; bottom: number };
+  /** fly here, e.g. to a place the user just searched for */
+  focus?: { lng: number; lat: number } | null;
 };
 
-export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], zoom = 2.6, className, atmosphere = true, attribution = true, fitInset }: Props) {
+export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], zoom = 2.6, className, atmosphere = true, attribution = true, fitInset, focus }: Props) {
   // server renders the default; the browser switches to the saved theme right after hydration
   const themeName = useSyncExternalStore(noSubscribe, themeFromCookie, () => "water");
   const theme = THEMES[themeName] ?? THEMES.water;
@@ -181,6 +183,16 @@ export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], 
   }, [insetKey]);
 
 
+
+  const focusKey = focus ? `${focus.lng.toFixed(6)},${focus.lat.toFixed(6)}` : "";
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !focus) return;
+    const go = () => map.flyTo({ center: [focus.lng, focus.lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
+    if (ready.current) go();
+    else map.once("load", go);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusKey]);
 
   useEffect(() => {
     const map = mapRef.current;

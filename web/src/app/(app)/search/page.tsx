@@ -24,7 +24,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       <div className="px-6">
         <form role="search">
           <input name="q" defaultValue={q} placeholder="Ask anything about your trips" aria-label="Ask anything about your trips"
-            className="h-[50px] w-full rounded-full border-[1.5px] border-coral bg-card px-5 text-[14px] placeholder:text-muted focus:outline-none" />
+            className="h-[50px] w-full rounded-full border-[1.5px] border-coral bg-card px-5 text-[14px] placeholder:text-muted focus:outline-none focus:ring-[3px] focus:ring-coral/30" />
         </form>
 
         {!r ? (

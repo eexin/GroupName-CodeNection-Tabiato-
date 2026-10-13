@@ -798,8 +798,8 @@ data, push notifications, native apps.
 - **Security in the database:** row-level security on all 20 tables. Notes and individual
   expenses are never public, even on a public trip; view-only members cannot upload; the sample
   account cannot delete trips. Secret keys never reach the browser.
-- **Tests:** 51 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
-  AI itinerary checks and the rules planner, search parsing) and 12 smoke tests against the production build, run by
+- **Tests:** 53 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
+  AI itinerary checks and the rules planner, search parsing, community trending) and 13 smoke tests against the production build, run by
   CI on every push.
 - **Monitoring:** `/api/health` checks the database and AI path; GitHub Actions calls it every 30
   minutes. Vercel Analytics and Speed Insights are built in.
@@ -813,7 +813,8 @@ data, push notifications, native apps.
 Stated up front, because a judge will ask.
 
 - **Place recognition is EXIF-based, not visual.** If a photo has no GPS we ask rather than guess
-  — correct behaviour, but it adds a step. Vision-based landmark recognition is future work, not a
+  — correct behaviour, but it adds a step, so the user can search a place name or paste a Maps link
+  instead of hunting on the map. Vision-based landmark recognition is future work, not a
   promise for this round.
 - **Free-tier ceilings are real.** Nominatim is 1 request per second, Supabase Storage is 1 GB,
   Groq has a per-minute cap. Our answer is caching and a capped demo dataset, not a claim that

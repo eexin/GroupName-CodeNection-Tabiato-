@@ -23,7 +23,7 @@ export default async function EndTripPage({ params }: { params: Promise<{ id: st
           <h1 className="text-[22px] font-bold text-ink">End this trip?</h1>
           <Ato size={80} mood="happy" />
         </div>
-        <p className="mt-2 text-[13px] leading-relaxed text-body">After this you cannot add new photos to {trip.name}.</p>
+        <p className="mt-2 text-[13px] leading-relaxed text-body">You can still add photos to {trip.name} afterwards, and I&apos;ll offer to rewrite the story.</p>
         <p className="mt-3 text-[13px] leading-relaxed text-body">
           I&apos;ll read the {photos ?? 0} memories you logged across {places ?? 0} places and write your trip story.
         </p>

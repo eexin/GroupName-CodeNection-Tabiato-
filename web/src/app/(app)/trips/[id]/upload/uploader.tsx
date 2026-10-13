@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { generateMemoryBook } from "@/features/memory-book/actions";
 import { clusterTrip } from "@/features/places/photo-actions";
 import { Ato } from "@/components/ato";
 import { AtoNote, buttonClass } from "@/components/ui";
@@ -47,7 +49,15 @@ async function readExif(file: File) {
   }
 }
 
-export function Uploader({ tripId, tripName, userId, autoPin = true, members = [], currency = "MYR" }: { tripId: string; tripName: string; userId: string; autoPin?: boolean; members?: Person[]; currency?: string }) {
+const noSubscribe = () => () => {};
+/** iPhone and iPad (iPadOS reports itself as a Mac with a touch screen). */
+const onIos = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+/** `hasStory`: the trip ended and Ato already wrote its story, so new photos can go into a rewrite. */
+export function Uploader({ tripId, tripName, userId, autoPin = true, members = [], currency = "MYR", hasStory = false }: { tripId: string; tripName: string; userId: string; autoPin?: boolean; members?: Person[]; currency?: string; hasStory?: boolean }) {
+  const router = useRouter();
+  const [rewriting, startRewrite] = useTransition();
+  const ios = useSyncExternalStore(noSubscribe, onIos, () => false);
   const [phase, setPhase] = useState<Phase>("pick");
   const [items, setItems] = useState<Item[]>([]);
   const [reading, setReading] = useState(false);
@@ -144,8 +154,21 @@ export function Uploader({ tripId, tripName, userId, autoPin = true, members = [
           {unlocated > 0 && ` ${unlocated} had no location — place them on the map when you're ready.`}
           {failed > 0 && ` ${failed} couldn't be uploaded; try those again.`}
         </p>
+        {hasStory && saved > 0 && (
+          <div className="mt-6 w-full text-left">
+            <AtoNote label="Ato can update your story" mood="happy">
+              I wrote your story before these {saved === 1 ? "photo" : "photos"} arrived. Want me to rewrite it with {saved === 1 ? "it" : "them"} in?
+            </AtoNote>
+          </div>
+        )}
         <div className="mt-8 w-full space-y-3">
-          <Link href={`/trips/${tripId}`} className={buttonClass("primary")}>See them on the map</Link>
+          {hasStory && saved > 0 && (
+            <button disabled={rewriting} className={buttonClass("primary")}
+              onClick={() => startRewrite(async () => { await generateMemoryBook(tripId); router.push(`/trips/${tripId}/book`); })}>
+              {rewriting ? "Rewriting your story…" : "Rewrite my story"}
+            </button>
+          )}
+          <Link href={`/trips/${tripId}`} className={buttonClass(hasStory && saved > 0 ? "quiet" : "primary")}>See them on the map</Link>
           <button onClick={() => { setItems([]); setDone(0); setFailed(0); setPhase("pick"); }} className={buttonClass("quiet")}>Add more photos</button>
         </div>
       </div>
@@ -199,6 +222,13 @@ export function Uploader({ tripId, tripName, userId, autoPin = true, members = [
           <p className="mt-4 max-w-[280px] text-[12.5px] leading-relaxed text-muted">
             Pick photos from your camera roll, or take one now. I read where and when each was taken.
           </p>
+          {/* Since iOS 17 Safari leaves the location out of library photos unless the user turns it
+              on in the picker, so without this tip every photo arrives "without a location". */}
+          {ios && (
+            <p className="mt-4 rounded-[14px] bg-surface px-4 py-3 text-left text-[12px] leading-snug text-body">
+              <strong className="text-ink">On iPhone:</strong> in the photo picker, tap <strong className="text-ink">Options</strong> at the top and turn on <strong className="text-ink">Location</strong>, so I can pin your photos for you.
+            </p>
+          )}
         </div>
       )}
 

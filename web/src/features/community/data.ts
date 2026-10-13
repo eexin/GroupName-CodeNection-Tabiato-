@@ -4,6 +4,7 @@ import { distanceM } from "@/lib/geo";
 import { person, type Person } from "@/lib/people";
 import { signedUrls } from "@/lib/storage";
 import type { Trip } from "@/lib/types";
+import { placeName } from "@/features/community/trending";
 
 export type Filter = "foryou" | "nearby" | "budget" | "saved";
 
@@ -24,7 +25,7 @@ export async function sharedSpend(supabase: SupabaseClient, tripId: string) {
 }
 
 /** Figma 23 — public trips, with For you / Nearby / Budget / Saved. */
-export async function getCommunity(supabase: SupabaseClient, userId: string, filter: Filter, near?: { lat: number; lng: number } | null): Promise<Card[]> {
+export async function getCommunity(supabase: SupabaseClient, userId: string, filter: Filter, near?: { lat: number; lng: number } | null, dest?: string | null): Promise<Card[]> {
   let trips: Trip[] = [];
   if (filter === "saved") {
     const { data: s } = await supabase.from("saves").select("trip_id").eq("user_id", userId);
@@ -33,6 +34,7 @@ export async function getCommunity(supabase: SupabaseClient, userId: string, fil
   } else {
     trips = ((await supabase.from("trips").select("*").eq("is_public", true).neq("owner_id", userId).order("created_at", { ascending: false }).limit(40)).data ?? []) as Trip[];
   }
+  if (dest) trips = trips.filter((t) => placeName(t).toLowerCase() === dest.toLowerCase());
   if (!trips.length) return [];
   const ids = trips.map((t) => t.id);
 
@@ -73,4 +75,41 @@ export async function getCommunity(supabase: SupabaseClient, userId: string, fil
       .sort((a, b) => distanceM(near.lat, near.lng, a.trip.dest_lat!, a.trip.dest_lng!) - distanceM(near.lat, near.lng, b.trip.dest_lat!, b.trip.dest_lng!));
   }
   return cards;
+}
+
+export type Activity = { who: Person; text: string; href: string; at: string };
+
+/**
+ * "Happening now": the latest likes, follows and newly shared trips across Community — what
+ * other travellers are doing, newest first. Only public trips and public follows are read, so
+ * RLS already limits it to what anyone may see.
+ */
+export async function getActivity(supabase: SupabaseClient, userId: string, max = 4): Promise<Activity[]> {
+  const [{ data: likes }, { data: follows }, { data: fresh }] = await Promise.all([
+    supabase.from("likes").select("user_id, trip_id, created_at").neq("user_id", userId).order("created_at", { ascending: false }).limit(12),
+    supabase.from("follows").select("follower, followee, created_at").neq("follower", userId).order("created_at", { ascending: false }).limit(8),
+    supabase.from("trips").select("id, owner_id, name, created_at").eq("is_public", true).neq("owner_id", userId).order("created_at", { ascending: false }).limit(6),
+  ]);
+  const tripIds = [...new Set((likes ?? []).map((l) => l.trip_id))];
+  const { data: liked } = tripIds.length
+    ? await supabase.from("trips").select("id, name, owner_id").in("id", tripIds).eq("is_public", true)
+    : { data: [] as { id: string; name: string; owner_id: string }[] };
+  const tripName = new Map((liked ?? []).map((t) => [t.id, t] as const));
+  const people = [...new Set([...(likes ?? []).map((l) => l.user_id), ...(follows ?? []).flatMap((f) => [f.follower, f.followee]), ...(fresh ?? []).map((t) => t.owner_id)])];
+  const { data: profiles } = people.length
+    ? await supabase.from("profiles").select("id, display_name, avatar_url, username").in("id", people)
+    : { data: [] as { id: string; display_name: string; avatar_url: string | null; username: string | null }[] };
+  const who = new Map((profiles ?? []).map((p) => [p.id, person(p.id, p.display_name, p.avatar_url)]));
+  const handle = new Map((profiles ?? []).map((p) => [p.id, p.username]));
+  const first = (id: string) => (who.get(id)?.name ?? "Someone").split(" ")[0];
+
+  const items: Activity[] = [
+    ...(fresh ?? []).map((t) => ({ who: who.get(t.owner_id) ?? person(t.owner_id, null), text: `shared ${t.name}`, href: `/community/${t.id}`, at: t.created_at })),
+    ...(likes ?? []).filter((l) => tripName.has(l.trip_id)).map((l) => {
+      const t = tripName.get(l.trip_id)!;
+      return { who: who.get(l.user_id) ?? person(l.user_id, null), text: `liked ${t.owner_id === userId ? "your trip" : `${first(t.owner_id)}'s ${t.name}`}`, href: `/community/${t.id}`, at: l.created_at };
+    }),
+    ...(follows ?? []).map((f) => ({ who: who.get(f.follower) ?? person(f.follower, null), text: `started following ${f.followee === userId ? "you" : first(f.followee)}`, href: handle.get(f.follower) ? `/u/${handle.get(f.follower)}` : "/community", at: f.created_at })),
+  ];
+  return items.sort((a, b) => b.at.localeCompare(a.at)).slice(0, max);
 }

@@ -63,6 +63,11 @@
 - [ ] Share link → Copy；Show my QR code → 用另一支手机相机扫 → 打开 /u/eexin
 - [ ] Scan QR → 允许相机 → 扫另一支手机的 QR → 跳到对方的页面（**iPhone 和 Android 都要测**）
 - [ ] Community：For you／Nearby（允许位置）／Budget／Saved 都有结果
+- [ ] Community：顶部「Trending destinations」点进去只显示该城市；「Happening now」有最新动态
+- [ ] Nearby：拒绝位置权限 → 出现提示，按钮恢复可按；切到别的分类再按回来也能按
+- [ ] 已结束的 trip（Bali）→ 地点列表下方有「Add photos」→ 上传后 Ato 提议重写故事
+- [ ] Tokyo →「2 photos need a place」→ 搜索「Senso-ji」→ 选结果 → 地图飞过去 → Place 2 photos here
+- [ ] iPhone：上传页有 Options → Location 的提示；照片选取时打开后能自动定位
 - [ ] Hokkaido → 花费 RM 1,800、Ato 比价、Follow、按赞、Save
 - [ ] Use this as a starting point → 新计划里有 Hokkaido 的地点
 - [ ] Message Max → 送出 → Profile → Messages 看得到对话

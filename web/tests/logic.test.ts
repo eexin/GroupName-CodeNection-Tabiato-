@@ -513,3 +513,27 @@ test("the character SVG has no scripts or links and draws every slot's item", ()
     assert.doesNotMatch(svg, /<script|on\w+=|href=/i);
   }
 });
+
+import { timeAgo } from "../src/lib/time";
+import { placeName, trending } from "../src/features/community/trending";
+
+test("activity times read like a feed", () => {
+  const now = Date.parse("2026-10-13T12:00:00Z");
+  const ago = (m: number) => new Date(now - m * 60_000).toISOString();
+  assert.equal(timeAgo(ago(0.2), now), "just now");
+  assert.equal(timeAgo(ago(5), now), "5m ago");
+  assert.equal(timeAgo(ago(180), now), "3h ago");
+  assert.equal(timeAgo(ago(30 * 60), now), "yesterday");
+  assert.equal(timeAgo(ago(4 * 1440), now), "4d ago");
+  assert.equal(timeAgo(ago(30 * 1440), now), "13 Sept");
+});
+
+test("trending destinations group public trips by city, most shared first", () => {
+  const card = (destination: string, likes: number, coverUrl: string | null = null) => ({ trip: { destination, name: "x" }, likes, coverUrl });
+  const t = trending([card("Tokyo, Japan", 3), card("Hong Kong", 9, "hk.jpg"), card("Tokyo, Japan", 2, "tokyo.jpg"), card("Hong Kong", 1), card("Tokyo", 1), card("Seoul, South Korea", 20)]);
+  assert.deepEqual(t.map((d) => `${d.name}:${d.trips}`), ["Tokyo:3", "Hong Kong:2", "Seoul:1"]);
+  assert.equal(t[0].coverUrl, "tokyo.jpg"); // first trip with a cover
+  assert.equal(t[0].likes, 6);
+  assert.equal(placeName({ destination: null, name: "Weekend away" }), "Weekend away");
+});
+

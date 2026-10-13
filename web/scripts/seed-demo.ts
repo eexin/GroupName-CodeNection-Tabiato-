@@ -37,6 +37,15 @@ const PEOPLE = {
   qi: { email: "qii@demo.tabiato.app", name: "Qii", style: { budget: "luxury", pace: "balanced", interests: ["shopping", "food"] } },
   jl: { email: "jim@demo.tabiato.app", name: "Jim Loong", style: { budget: "mid", pace: "balanced", interests: ["culture"] } },
   ky: { email: "kai@demo.tabiato.app", name: "Kai Yang", style: { budget: "budget", pace: "packed", interests: ["nature"] } },
+  // Community travellers: they only post public trips, like and follow, so Community feels lived in
+  ai: { email: "aiko@demo.tabiato.app", name: "Aiko Tan", style: { budget: "mid", pace: "packed", interests: ["food"] } },
+  dn: { email: "daniel@demo.tabiato.app", name: "Daniel Lim", style: { budget: "mid", pace: "balanced", interests: ["culture", "food"] } },
+  sw: { email: "sara@demo.tabiato.app", name: "Sara Wong", style: { budget: "budget", pace: "slow", interests: ["culture"] } },
+  hl: { email: "hana@demo.tabiato.app", name: "Hana Lee", style: { budget: "mid", pace: "slow", interests: ["nature", "culture"] } },
+  rk: { email: "ravi@demo.tabiato.app", name: "Ravi Kumar", style: { budget: "budget", pace: "packed", interests: ["nature"] } },
+  mc: { email: "meichen@demo.tabiato.app", name: "Mei Chen", style: { budget: "luxury", pace: "balanced", interests: ["nightlife", "food"] } },
+  jo: { email: "jason@demo.tabiato.app", name: "Jason Ong", style: { budget: "budget", pace: "packed", interests: ["nature"] } },
+  na: { email: "nurul@demo.tabiato.app", name: "Nurul Aina", style: { budget: "mid", pace: "slow", interests: ["nature", "food"] } },
 } as const;
 type Who = keyof typeof PEOPLE;
 const ids = {} as Record<Who, string>;
@@ -123,6 +132,8 @@ type PlaceSpec = {
   gapMin?: number; by?: Who[]; ratings?: Partial<Record<Who, number>>;
   spend?: { amount: number; label: string; by: Who; split?: number; currency?: string; myr?: number }[];
   note?: { by: Who; body: string }; comments?: { by: Who; body: string }[];
+  /** start this many photos into the place's folder, so a place shared by two trips gets a different cover */
+  skip?: number;
 };
 
 async function places(tripId: string, specs: PlaceSpec[]) {
@@ -136,7 +147,7 @@ async function places(tripId: string, specs: PlaceSpec[]) {
     const rows = [];
     const real = realPhotos(p.name);
     for (let i = 0; i < p.photos; i++) {
-      const r = real.length ? real[i % real.length] : null;
+      const r = real.length ? real[(i + (p.skip ?? 0)) % real.length] : null;
       const path = `${tripId}/${randomUUID()}${r ? r.ext : ".svg"}`;
       const up = await db.storage.from("photos").upload(path, r ? r.body : Buffer.from(postcard(p.name, p.category, i)), { contentType: r ? r.type : "image/svg+xml" });
       if (up.error) throw new Error(`upload: ${up.error.message}`);
@@ -174,6 +185,14 @@ const LOOKS: Record<Who, Look> = {
   qi: { skin: 1, hairColor: 3, items: { hair: "hair_bob", glasses: "glasses_sun", ear: "ear_hoop", clothes: "clothes_tee", neck: "neck_scarf", frame: "frame_gold" } },
   jl: { skin: 2, hairColor: 1, items: { hair: "hair_short", glasses: "glasses_round", clothes: "clothes_rain" } },
   ky: { skin: 3, hairColor: 0, items: { hair: "hair_curly", hat: "hat_bucket", clothes: "clothes_aloha", neck: "neck_lei" } },
+  ai: { skin: 0, hairColor: 0, items: { hair: "hair_bun", clothes: "clothes_tee", neck: "neck_camera" } },
+  dn: { skin: 2, hairColor: 0, items: { hair: "hair_short", glasses: "glasses_round", clothes: "clothes_hoodie", back: "back_backpack" } },
+  sw: { skin: 1, hairColor: 1, items: { hair: "hair_long", hat: "hat_beanie", clothes: "clothes_rain", neck: "neck_scarf" } },
+  hl: { skin: 1, hairColor: 2, items: { hair: "hair_bob", hat: "hat_straw", clothes: "clothes_aloha", ear: "ear_stud" } },
+  rk: { skin: 4, hairColor: 0, items: { hair: "hair_curly", glasses: "glasses_sun", clothes: "clothes_tee", back: "back_backpack" } },
+  mc: { skin: 0, hairColor: 4, items: { hair: "hair_long", glasses: "glasses_sun", ear: "ear_hoop", clothes: "clothes_hoodie", frame: "frame_gold" } },
+  jo: { skin: 3, hairColor: 1, items: { hair: "hair_short", hat: "hat_cap", clothes: "clothes_aloha", neck: "neck_lei" } },
+  na: { skin: 2, hairColor: 0, items: { hair: "hair_bun", clothes: "clothes_rain", neck: "neck_scarf" } },
 };
 const SETTINGS = { auto_pin: true, friends_can_add: true, ato_insights: true };
 
@@ -185,7 +204,7 @@ async function main() {
     const { data: created, error } = await db.auth.admin.createUser({ email: p.email, password: PASSWORD, email_confirm: true, user_metadata: { name: p.name } });
     if (error || !created.user) throw new Error(`user ${p.email}: ${error?.message ?? "not created"}`);
     ids[key] = created.user.id;
-    const handle = { ex: "eexin", mx: "max", qi: "qii", jl: "jim", ky: "kai" }[key];
+    const handle = { ex: "eexin", mx: "max", qi: "qii", jl: "jim", ky: "kai", ai: "aiko", dn: "daniel", sw: "sara", hl: "hana", rk: "ravi", mc: "meichen", jo: "jason", na: "nurul" }[key];
     ok(await db.from("profiles").update({
       display_name: p.name, username: handle, travel_style: p.style, onboarded_at: new Date().toISOString(),
       avatar_url: lookUrl(LOOKS[key]), settings: { ...SETTINGS, look: encodeLook(LOOKS[key]) },
@@ -294,14 +313,113 @@ async function main() {
     { trip_id: hokkaido, place_id: null, paid_by: ids.mx, amount: 426, label: "JR pass", amount_myr: 426 },
   ]), "hokkaido spend");
 
-  // --- community activity: likes, a save, follows, and an unread message for Ee Xin ---
-  ok(await db.from("likes").insert([
-    { user_id: ids.ex, trip_id: hokkaido }, { user_id: ids.qi, trip_id: hokkaido }, { user_id: ids.ky, trip_id: hokkaido }, { user_id: ids.ky, trip_id: bali },
-  ]), "likes");
-  ok(await db.from("saves").insert({ user_id: ids.ex, trip_id: hokkaido }), "saves");
-  ok(await db.from("follows").insert([
-    { follower: ids.ex, followee: ids.mx }, { follower: ids.qi, followee: ids.mx }, { follower: ids.ky, followee: ids.ex },
-  ]), "follows");
+  // --- Community: ten more public trips by other travellers, shared over the last few days. Dates
+  //     are relative to the nightly reset, so the feed always reads "2h ago", "yesterday"…
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
+  ok(await db.from("trips").update({ created_at: hoursAgo(30) }).eq("id", hokkaido), "hokkaido shared");
+  type Stop = Omit<PlaceSpec, "arrive" | "by" | "ratings" | "spend"> & { day: number; time: string; stars?: number; spend?: [number, string] };
+  type Share = { owner: Who; name: string; destination: string; days: number; endedDaysAgo: number; centre: [number, number]; cc: string; sharedHoursAgo: number; members?: Who[]; stay: [number, string]; stops: Stop[] };
+  const SHARES: Share[] = [
+    { owner: "ai", name: "3 days eating Hong Kong", destination: "Hong Kong", days: 3, endedDaysAgo: 6, centre: [22.3193, 114.1694], cc: "HK", sharedHoursAgo: 2, members: ["mc"], stay: [780, "Hotel, 3 nights"], stops: [
+      { name: "Tim Ho Wan Sham Shui Po", category: "food", lat: 22.3307, lng: 114.1622, day: 0, time: "08:30", photos: 3, stars: 5, spend: [68, "Dim sum for two"], comments: [{ by: "mc", body: "The baked char siu bao. Every single time." }] },
+      { name: "Mong Kok", category: "shopping", lat: 22.3193, lng: 114.1694, day: 0, time: "15:00", photos: 3, stars: 4 },
+      { name: "Temple Street Night Market", category: "food", lat: 22.306, lng: 114.17, day: 1, time: "19:30", photos: 4, stars: 4, spend: [85, "Clay pot rice and skewers"] },
+      { name: "Star Ferry", category: "culture", lat: 22.2939, lng: 114.1683, day: 2, time: "10:00", photos: 3, stars: 5, spend: [5, "Ferry, both ways"] },
+    ] },
+    { owner: "dn", name: "First time in Tokyo", destination: "Tokyo, Japan", days: 4, endedDaysAgo: 10, centre: [35.6812, 139.7671], cc: "JP", sharedHoursAgo: 5, stay: [1100, "Hotel, 4 nights"], stops: [
+      { name: "Senso-ji", category: "culture", lat: 35.7148, lng: 139.7967, day: 0, time: "07:30", photos: 4, skip: 1, stars: 5 },
+      { name: "Nakamise-dori", category: "shopping", lat: 35.7119, lng: 139.7962, day: 0, time: "09:00", photos: 3, stars: 4, spend: [45, "Ningyo-yaki and souvenirs"] },
+      { name: "Tokyo Skytree", category: "culture", lat: 35.7101, lng: 139.8107, day: 1, time: "17:30", photos: 4, stars: 4, spend: [120, "Tembo deck tickets"] },
+      { name: "Shibuya Crossing", category: "culture", lat: 35.6595, lng: 139.7005, day: 2, time: "18:00", photos: 4, skip: 2, stars: 5 },
+      { name: "Ichiran Shibuya", category: "food", lat: 35.6614, lng: 139.701, day: 2, time: "20:30", photos: 2, stars: 4, spend: [48, "Ramen for two"] },
+    ] },
+    { owner: "sw", name: "Seoul on a slow weekend", destination: "Seoul, South Korea", days: 3, endedDaysAgo: 4, centre: [37.5665, 126.978], cc: "KR", sharedHoursAgo: 9, stay: [420, "Guesthouse, 2 nights"], stops: [
+      { name: "Gyeongbokgung Palace", category: "culture", lat: 37.5796, lng: 126.977, day: 0, time: "09:30", photos: 3, stars: 5, spend: [12, "Palace entry"] },
+      { name: "Bukchon Hanok Village", category: "culture", lat: 37.5826, lng: 126.983, day: 0, time: "13:00", photos: 2, stars: 4 },
+      { name: "Gwangjang Market", category: "food", lat: 37.5701, lng: 126.9996, day: 1, time: "12:30", photos: 3, stars: 5, spend: [38, "Bindaetteok and mayak gimbap"] },
+    ] },
+    { owner: "hl", name: "A slow week in Ubud", destination: "Bali, Indonesia", days: 5, endedDaysAgo: 14, centre: [-8.5069, 115.2625], cc: "ID", sharedHoursAgo: 14, stay: [1400, "Villa, 5 nights"], stops: [
+      { name: "Tegallalang Rice Terrace", category: "nature", lat: -8.4318, lng: 115.2791, day: 0, time: "07:00", photos: 3, stars: 5, spend: [20, "Entry and coffee"] },
+      { name: "Ubud Monkey Forest", category: "nature", lat: -8.5188, lng: 115.2585, day: 1, time: "10:00", photos: 3, stars: 3 },
+      { name: "Ubud Art Market", category: "shopping", lat: -8.5069, lng: 115.2625, day: 2, time: "11:00", photos: 2, stars: 4, spend: [150, "Sarongs and a woven bag"] },
+    ] },
+    { owner: "rk", name: "Hong Kong views on foot", destination: "Hong Kong", days: 3, endedDaysAgo: 8, centre: [22.3193, 114.1694], cc: "HK", sharedHoursAgo: 20, stay: [360, "Hostel, 3 nights"], stops: [
+      { name: "Victoria Peak", category: "nature", lat: 22.2759, lng: 114.1455, day: 0, time: "17:30", photos: 5, stars: 5, spend: [30, "Peak Tram"] },
+      { name: "Tsim Sha Tsui Promenade", category: "culture", lat: 22.2934, lng: 114.1722, day: 0, time: "20:00", photos: 4, skip: 2, stars: 5 },
+      { name: "Tian Tan Buddha", category: "culture", lat: 22.254, lng: 113.905, day: 1, time: "11:00", photos: 5, stars: 5, spend: [70, "Ngong Ping cable car"] },
+    ] },
+    { owner: "mc", name: "Tokyo after dark", destination: "Tokyo, Japan", days: 4, endedDaysAgo: 12, centre: [35.6812, 139.7671], cc: "JP", sharedHoursAgo: 26, members: ["ai"], stay: [2600, "Hotel, 4 nights"], stops: [
+      { name: "Omoide Yokocho", category: "food", lat: 35.693, lng: 139.6995, day: 0, time: "20:00", photos: 5, stars: 5, spend: [95, "Yakitori crawl"], comments: [{ by: "ai", body: "Still dreaming about the tsukune." }] },
+      { name: "Shibuya Crossing", category: "culture", lat: 35.6595, lng: 139.7005, day: 1, time: "21:00", photos: 4, skip: 4, stars: 4 },
+      { name: "teamLab Planets", category: "culture", lat: 35.6491, lng: 139.7898, day: 2, time: "19:00", photos: 7, stars: 5, spend: [140, "Tickets"] },
+      { name: "Harajuku Takeshita Street", category: "shopping", lat: 35.6716, lng: 139.7031, day: 3, time: "14:00", photos: 3, stars: 3, spend: [210, "Shopping"] },
+    ] },
+    { owner: "jo", name: "Surf week in Bali", destination: "Bali, Indonesia", days: 6, endedDaysAgo: 20, centre: [-8.65, 115.22], cc: "ID", sharedHoursAgo: 33, stay: [950, "Surf camp, 6 nights"], stops: [
+      { name: "Uluwatu Cliff", category: "nature", lat: -8.8291, lng: 115.0849, day: 0, time: "17:00", photos: 4, skip: 1, stars: 5 },
+      { name: "Padang Padang Beach", category: "nature", lat: -8.8114, lng: 115.103, day: 1, time: "07:00", photos: 3, skip: 1, stars: 5, spend: [80, "Board rental"] },
+      { name: "Single Fin", category: "food", lat: -8.815, lng: 115.088, day: 1, time: "18:00", photos: 2, skip: 1, stars: 4, spend: [60, "Sunset drinks"] },
+      { name: "Seminyak Beach", category: "nature", lat: -8.6913, lng: 115.1569, day: 4, time: "17:30", photos: 6, skip: 2, stars: 4 },
+    ] },
+    { owner: "qi", name: "Hong Kong, old and new", destination: "Hong Kong", days: 2, endedDaysAgo: 3, centre: [22.3193, 114.1694], cc: "HK", sharedHoursAgo: 41, stay: [1300, "Hotel, 2 nights"], stops: [
+      { name: "Tai Kwun", category: "culture", lat: 22.2812, lng: 114.1543, day: 0, time: "14:00", photos: 4, stars: 5 },
+      { name: "Star Ferry", category: "culture", lat: 22.2939, lng: 114.1683, day: 0, time: "18:00", photos: 3, skip: 1, stars: 4, spend: [5, "Ferry"] },
+      { name: "Mong Kok", category: "shopping", lat: 22.3193, lng: 114.1694, day: 1, time: "15:00", photos: 3, skip: 1, stars: 4, spend: [420, "Sneakers"] },
+    ] },
+    { owner: "ky", name: "Bali sunsets, three ways", destination: "Bali, Indonesia", days: 4, endedDaysAgo: 25, centre: [-8.65, 115.22], cc: "ID", sharedHoursAgo: 52, stay: [520, "Guesthouse, 4 nights"], stops: [
+      { name: "Tanah Lot", category: "culture", lat: -8.6212, lng: 115.0868, day: 0, time: "17:30", photos: 3, stars: 5 },
+      { name: "Jimbaran Bay", category: "food", lat: -8.771, lng: 115.165, day: 1, time: "18:30", photos: 8, stars: 5, spend: [160, "Seafood on the sand"] },
+      { name: "Seminyak Beach", category: "nature", lat: -8.6913, lng: 115.1569, day: 2, time: "17:45", photos: 6, stars: 4 },
+    ] },
+    { owner: "na", name: "Tokyo's green corners", destination: "Tokyo, Japan", days: 3, endedDaysAgo: 18, centre: [35.6812, 139.7671], cc: "JP", sharedHoursAgo: 70, stay: [900, "Hotel, 3 nights"], stops: [
+      { name: "Shinjuku Gyoen", category: "nature", lat: 35.6852, lng: 139.71, day: 0, time: "10:00", photos: 4, stars: 5, spend: [8, "Garden entry"] },
+      { name: "Senso-ji", category: "culture", lat: 35.7148, lng: 139.7967, day: 1, time: "08:00", photos: 4, skip: 2, stars: 4 },
+      { name: "Tsukiji Outer Market", category: "food", lat: 35.6655, lng: 139.7707, day: 2, time: "08:30", photos: 5, skip: 1, stars: 5, spend: [70, "Tamagoyaki and a tuna bowl"] },
+    ] },
+    { owner: "jl", name: "Sapporo snow weekend", destination: "Hokkaido, Japan", days: 3, endedDaysAgo: 30, centre: [43.0618, 141.3545], cc: "JP", sharedHoursAgo: 90, stay: [640, "Hotel, 2 nights"], stops: [
+      { name: "Nijo Market", category: "food", lat: 43.0587, lng: 141.3574, day: 0, time: "08:30", photos: 3, skip: 1, stars: 4, spend: [110, "Kaisendon"] },
+      { name: "Sapporo Clock Tower", category: "culture", lat: 43.0625, lng: 141.3536, day: 0, time: "12:00", photos: 2, skip: 1, stars: 3 },
+      { name: "Otaru Canal", category: "culture", lat: 43.1993, lng: 141.0023, day: 1, time: "16:00", photos: 3, skip: 1, stars: 5 },
+    ] },
+  ];
+  const shared: string[] = [hokkaido];
+  for (const sh of SHARES) {
+    const first = -(sh.endedDaysAgo + sh.days - 1);
+    const id = await trip(sh.owner, {
+      name: sh.name, destination: sh.destination, start_date: dayOffset(first), end_date: dayOffset(-sh.endedDaysAgo), status: "finished",
+      is_public: true, dest_lat: sh.centre[0], dest_lng: sh.centre[1], country_code: sh.cc, created_at: hoursAgo(sh.sharedHoursAgo),
+    }, sh.members ?? []);
+    photos += await places(id, sh.stops.map(({ day, time, stars, spend, ...rest }) => ({
+      ...rest, arrive: at(dayOffset(first + day), time), by: [sh.owner],
+      ratings: stars ? { [sh.owner]: stars } : undefined,
+      spend: spend ? [{ amount: spend[0], label: spend[1], by: sh.owner }] : undefined,
+    })));
+    ok(await db.from("expenses").insert({ trip_id: id, place_id: null, paid_by: ids[sh.owner], amount: sh.stay[0], label: sh.stay[1], amount_myr: sh.stay[0] }), "stay");
+    shared.push(id);
+  }
+
+  // likes and follows from everyone, minutes to days old, so "Happening now" always has news.
+  // A fixed seed keeps every reset the same.
+  let rnd = 7;
+  const rand = () => (rnd = (rnd * 16807) % 2147483647) / 2147483647;
+  const everyone = Object.keys(PEOPLE) as Who[];
+  const owners = new Map<string, Who>([[hokkaido, "mx"], [bali, "ex"], ...SHARES.map((sh, i) => [shared[i + 1], sh.owner] as [string, Who])]);
+  const likes: { user_id: string; trip_id: string; created_at: string }[] = [];
+  for (const who of everyone) {
+    if (who === "ex") continue;
+    for (const t of [...owners.keys()]) {
+      if (owners.get(t) === who || rand() > 0.42) continue;
+      likes.push({ user_id: ids[who], trip_id: t, created_at: hoursAgo(0.05 + rand() * 60) });
+    }
+  }
+  // Ee Xin has liked a few already, so the hearts show both states
+  for (const t of [hokkaido, shared[3]]) likes.push({ user_id: ids.ex, trip_id: t, created_at: hoursAgo(20 + rand() * 20) });
+  ok(await db.from("likes").insert(likes), "likes");
+  ok(await db.from("saves").insert([{ user_id: ids.ex, trip_id: hokkaido }, { user_id: ids.ex, trip_id: shared[3] }]), "saves");
+  const followPairs: [Who, Who][] = [
+    ["ex", "mx"], ["qi", "mx"], ["ky", "ex"], ["ex", "ai"], ["mc", "ai"], ["dn", "ai"], ["sw", "ai"], ["ai", "mc"], ["hl", "mc"],
+    ["jo", "ky"], ["rk", "jo"], ["na", "hl"], ["dn", "mx"], ["sw", "qi"], ["mc", "dn"], ["na", "ai"], ["rk", "mx"], ["jl", "na"],
+  ];
+  ok(await db.from("follows").insert(followPairs.map(([a, b], i) => ({ follower: ids[a], followee: ids[b], created_at: hoursAgo(0.3 + i * 2.7) }))), "follows");
   ok(await db.from("messages").insert([
     { sender: ids.ex, recipient: ids.mx, body: "Your Hokkaido trip is exactly what I want for Feb!", read_at: new Date().toISOString() },
     { sender: ids.mx, recipient: ids.ex, body: "Go for the crab at Nijo Market, and get the JR pass — it paid for itself." },
@@ -312,7 +430,7 @@ async function main() {
   ok(await db.from("trip_members").insert({ trip_id: penang, user_id: ids.ex, role: "contributor", status: "invited", invited_by: ids.qi }), "invite");
 
   const realCount = existsSync(PHOTO_DIR) ? readdirSync(PHOTO_DIR).filter((d) => !d.startsWith(".") && !d.endsWith(".md")).length : 0;
-  console.log(`\nDemo ready: 5 accounts, 6 trips, ${photos} photos (${realCount ? `real photos for ${realCount} places` : "generated postcards — add real ones in scripts/demo-photos"}).\n`);
+  console.log(`\nDemo ready: ${Object.keys(PEOPLE).length} accounts, ${6 + SHARES.length} trips, ${photos} photos (${realCount ? `real photos for ${realCount} places` : "generated postcards — add real ones in scripts/demo-photos"}).\n`);
   console.log("Log in as any of these, password:", PASSWORD);
   for (const p of Object.values(PEOPLE)) console.log(`  ${p.name.padEnd(10)} ${p.email}`);
   console.log(`
@@ -322,7 +440,7 @@ Demo path as Ee Xin:
   Home → Tokyo → "2 photos need a place" → place them on the map
   Home → accept Qii's Penang invite
   Trips → Planned → Osaka → Edit → Build my itinerary
-  Community → Max's Hokkaido trip
+  Community → trending destinations, "Happening now", and twelve public trips
   Profile → Friends → Add friend → Kai appears under "You travelled with them"; search @max or eexin@demo.tabiato.app
   Bali → members → Kai is view-only; the ••• menu changes that
   Profile → Messages: an unread reply from Max · Profile → map theme: try Night Sky

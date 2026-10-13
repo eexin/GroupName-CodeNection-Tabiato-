@@ -61,7 +61,7 @@ export default async function PlacesPage({ params, searchParams }: { params: Pro
       <div className="px-6">
         <form role="search" className="flex gap-2">
           <input name="q" defaultValue={q} placeholder="Search a place, or paste a link" aria-label="Search a place"
-            className="h-[48px] flex-1 rounded-full border-[1.5px] border-coral bg-card px-5 text-[13.5px] focus:outline-none" />
+            className="h-[48px] flex-1 rounded-full border-[1.5px] border-coral bg-card px-5 text-[13.5px] focus:outline-none focus:ring-[3px] focus:ring-coral/30" />
           <button className="h-[48px] rounded-full bg-coral px-5 text-[13px] font-bold text-white">Search</button>
         </form>
 

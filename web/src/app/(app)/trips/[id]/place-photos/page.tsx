@@ -18,7 +18,8 @@ export default async function PlacePhotosPage({ params }: { params: Promise<{ id
   return (
     <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
       <BackHeader href={`/trips/${id}`} title="Place your photos" subtitle={`${t.unplaced.length} without a location`} />
-      <Placer tripId={id} photos={t.unplaced} pins={pins} />
+      <Placer tripId={id} photos={t.unplaced} pins={pins}
+        near={t.trip.dest_lat !== null && t.trip.dest_lng !== null ? { lat: t.trip.dest_lat, lng: t.trip.dest_lng } : pins[0] ?? null} />
     </main>
   );
 }

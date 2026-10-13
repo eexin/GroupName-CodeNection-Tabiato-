@@ -71,7 +71,7 @@ export function NoteEditor({ placeId, tripId, initial, drafted, insights = true 
   const [busy, start] = useTransition();
   const [drafting, startDraft] = useTransition();
   return (
-    <div className="rounded-[16px] bg-card p-3 shadow-card">
+    <div className="rounded-[16px] bg-card p-3 shadow-card has-[textarea:focus]:ring-2 has-[textarea:focus]:ring-coral">
       {!body && insights && (
         <button type="button" disabled={drafting} onClick={() => startDraft(async () => { await draftNote(placeId, tripId); location.reload(); })}
           className="mb-2 flex min-h-[40px] items-center gap-2 rounded-full bg-surface pl-1 pr-4 text-[12px] font-bold text-deep">
@@ -127,7 +127,7 @@ export function DeleteExpense({ id, placeId }: { id: string; placeId: string }) 
 export function CommentForm({ placeId, tripId }: { placeId: string; tripId: string }) {
   const [state, action, busy] = useActionState<ActionResult, FormData>(addComment.bind(null, placeId, tripId), {});
   return (
-    <form action={action} className="flex items-center gap-2 rounded-full bg-card py-1.5 pl-4 pr-1.5 shadow-card">
+    <form action={action} className="flex items-center gap-2 rounded-full bg-card py-1.5 pl-4 pr-1.5 shadow-card has-[input:focus]:ring-2 has-[input:focus]:ring-coral">
       <input name="body" placeholder="Add to this spot…" aria-label="Comment" maxLength={2000} required
         className="h-9 flex-1 bg-transparent text-[13px] placeholder:text-muted focus:outline-none" />
       <button disabled={busy} className="h-9 shrink-0 rounded-full bg-coral px-4 text-[12px] font-bold text-white">Post</button>
@@ -151,7 +151,7 @@ export function PlaceName({ placeId, name, editable }: { placeId: string; name: 
   return (
     <form onSubmit={(e) => { e.preventDefault(); setEditing(false); start(() => { renamePlace(placeId, value); }); }} className="flex gap-2">
       <input value={value} onChange={(e) => setValue(e.target.value)} autoFocus maxLength={80} aria-label="Place name"
-        className="h-9 flex-1 rounded-[10px] border border-coral px-3 text-[15px] font-bold text-ink focus:outline-none" />
+        className="h-9 flex-1 rounded-[10px] border border-coral px-3 text-[15px] font-bold text-ink focus:outline-none focus:ring-[3px] focus:ring-coral/30" />
       <button className="rounded-[10px] bg-coral px-3 text-[12px] font-bold text-white">Save</button>
     </form>
   );

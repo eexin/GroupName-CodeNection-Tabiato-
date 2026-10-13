@@ -64,7 +64,7 @@ export default async function AddFriendPage({ searchParams }: { searchParams: Pr
       <div className="px-6">
         <form role="search">
           <input name="q" defaultValue={q} placeholder="Name, email or @username" aria-label="Find someone by name, email or username"
-            className="h-[50px] w-full rounded-full border-[1.5px] border-coral bg-card px-5 text-[14px] placeholder:text-muted focus:outline-none" />
+            className="h-[50px] w-full rounded-full border-[1.5px] border-coral bg-card px-5 text-[14px] placeholder:text-muted focus:outline-none focus:ring-[3px] focus:ring-coral/30" />
         </form>
         {term.length >= 2 && (
           <ul className="mt-4 space-y-3">

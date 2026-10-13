@@ -48,10 +48,13 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* keyboard focus stays visible everywhere */
-:focus-visible {
-  outline: 2px solid var(--color-coral);
-  outline-offset: 2px;
+/* keyboard focus stays visible everywhere. In the base layer so a field that draws its own focus
+   (a coloured border or ring, with outline-none) is not boxed twice. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-coral);
+    outline-offset: 2px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
