@@ -25,9 +25,11 @@ export async function saveProfile(_: ProfileState, form: FormData): Promise<Prof
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const { supabase, user } = await requireUser();
   const { name, username, ...style } = parsed.data;
+  // keep the style Ato learned from your trips (travel_style.learned) when you edit what you told us
+  const { data: me } = await supabase.from("profiles").select("travel_style").eq("id", user.id).maybeSingle();
   const { error } = await supabase
     .from("profiles")
-    .update({ display_name: name, username, travel_style: style, onboarded_at: new Date().toISOString() })
+    .update({ display_name: name, username, travel_style: { ...(me?.travel_style ?? {}), ...style }, onboarded_at: new Date().toISOString() })
     .eq("id", user.id);
   if (error?.code === "23505") return { error: `@${username} is taken. Try another.` };
   if (error) return { error: "Couldn't save your profile. Try again." };

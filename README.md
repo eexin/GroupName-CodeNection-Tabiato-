@@ -368,7 +368,9 @@ promises <i>"I will fit the rest around these 3. Nothing you added gets moved or
 <td valign="top"><b>Group preferences</b> — everyone's budget and style side by side with the
 conflicts named. The leader decides; the app does not score fairness.</td>
 <td valign="top"><b>The itinerary</b> — your stops carry a <b>yours</b> tag. The AI did the
-ordering, timing and gap-filling, not the choosing.</td>
+ordering, timing and gap-filling, not the choosing. It is built around your <b>travel style</b>,
+learned in code from your finished trips: when you usually head out and wrap up (photo times), how
+long you stay at each kind of place, what you rate highly. Group plans blend everyone's style.</td>
 </tr>
 <tr>
 <td valign="top"><img src="docs/assets/ui-29-plan-a-trip.png" width="100%"></td>
@@ -798,8 +800,8 @@ data, push notifications, native apps.
 - **Security in the database:** row-level security on all 20 tables. Notes and individual
   expenses are never public, even on a public trip; view-only members cannot upload; the sample
   account cannot delete trips. Secret keys never reach the browser.
-- **Tests:** 53 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
-  AI itinerary checks and the rules planner, search parsing, community trending) and 13 smoke tests against the production build, run by
+- **Tests:** 58 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
+  AI itinerary checks and the rules planner, travel-style learning, search parsing, community trending) and 13 smoke tests against the production build, run by
   CI on every push.
 - **Monitoring:** `/api/health` checks the database and AI path; GitHub Actions calls it every 30
   minutes. Vercel Analytics and Speed Insights are built in.

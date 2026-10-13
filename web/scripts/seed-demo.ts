@@ -13,6 +13,8 @@ import { extname, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { encodeLook, lookUrl, type Look } from "../src/lib/character";
+import { gatherHistory } from "../src/features/planner/history";
+import { describeStyle, learnStyle } from "../src/features/planner/style";
 
 // ---------- env ----------
 if (existsSync(".env.local")) {
@@ -287,6 +289,25 @@ async function main() {
     { name: "Bukchon Hanok Village", category: "culture", lat: 37.5826, lng: 126.9831, arrive: at("2026-03-03", "15:00"), photos: 2, ratings: { ex: 3 } },
   ]);
 
+  // --- Hong Kong: an older finished weekend. With Bali and Seoul it gives Ee Xin a clear travel
+  // style (features/planner/style.ts): out by about 7:45, two places a day, long meals, food
+  // loved and shopping not — so building Osaka visibly plans around her. ---
+  const hk = await trip("ex", { name: "Hong Kong weekend", destination: "Hong Kong", start_date: "2025-12-12", end_date: "2025-12-14", status: "finished", dest_lat: 22.3027, dest_lng: 114.1772, country_code: "HK" });
+  photos += await places(hk, [
+    { name: "Tim Ho Wan Sham Shui Po", category: "food", lat: 22.3307, lng: 114.1622, arrive: at("2025-12-12", "07:45"), photos: 5, gapMin: 18, skip: 1, ratings: { ex: 5 },
+      spend: [{ amount: 46, label: "Dim sum breakfast", by: "ex" }], note: { by: "ex", body: "First in the queue. Stayed for a second round of char siu bao." } },
+    { name: "Star Ferry", category: "culture", lat: 22.2939, lng: 114.1683, arrive: at("2025-12-12", "10:00"), photos: 3, skip: 2, ratings: { ex: 4 },
+      spend: [{ amount: 5, label: "Ferry", by: "ex" }] },
+    { name: "Victoria Peak", category: "nature", lat: 22.2759, lng: 114.1455, arrive: at("2025-12-12", "17:30"), photos: 4, skip: 1, ratings: { ex: 5 },
+      spend: [{ amount: 30, label: "Peak Tram", by: "ex" }] },
+    { name: "Tai Kwun", category: "culture", lat: 22.2812, lng: 114.1543, arrive: at("2025-12-13", "08:00"), photos: 3, skip: 1, ratings: { ex: 3 } },
+    { name: "Temple Street Night Market", category: "food", lat: 22.3060, lng: 114.1700, arrive: at("2025-12-13", "18:00"), photos: 5, gapMin: 18, skip: 1, ratings: { ex: 5 },
+      spend: [{ amount: 72, label: "Clay pot rice", by: "ex" }] },
+    { name: "Tsim Sha Tsui Promenade", category: "culture", lat: 22.2934, lng: 114.1722, arrive: at("2025-12-14", "07:30"), photos: 3, skip: 1, ratings: { ex: 4 } },
+    { name: "Mong Kok", category: "shopping", lat: 22.3193, lng: 114.1694, arrive: at("2025-12-14", "10:00"), photos: 2, skip: 2, ratings: { ex: 2 },
+      spend: [{ amount: 120, label: "Sneakers I didn't need", by: "ex" }] },
+  ]);
+
   // --- Osaka: a plan with three must-visits, ready to press Build live ---
   const osaka = await trip("ex", {
     name: "Osaka", destination: "Osaka, Japan", start_date: "2027-02-04", end_date: "2027-02-07", status: "planned",
@@ -429,8 +450,17 @@ async function main() {
   const penang = await trip("qi", { name: "Penang weekend", destination: "Penang, Malaysia", start_date: dayOffset(0), end_date: dayOffset(2), status: "ongoing", dest_lat: 5.4164, dest_lng: 100.3327, country_code: "MY" });
   ok(await db.from("trip_members").insert({ trip_id: penang, user_id: ids.ex, role: "contributor", status: "invited", invited_by: ids.qi }), "invite");
 
+  // --- every sample account's travel style, learned from its finished trips by the app's own code ---
+  for (const who of everyone) {
+    const learned = learnStyle(await gatherHistory(db, ids[who]));
+    if (!learned.evidence?.places) continue;
+    const { data: prof } = await db.from("profiles").select("travel_style").eq("id", ids[who]).single();
+    ok(await db.from("profiles").update({ travel_style: { ...(prof?.travel_style ?? {}), learned: { ...learned, updated_at: new Date().toISOString() } } }).eq("id", ids[who]), "style");
+    if (who === "ex") console.log(`\nEe Xin's travel style: ${describeStyle(learned).line}\n  ${describeStyle(learned).tags.join(" · ")}`);
+  }
+
   const realCount = existsSync(PHOTO_DIR) ? readdirSync(PHOTO_DIR).filter((d) => !d.startsWith(".") && !d.endsWith(".md")).length : 0;
-  console.log(`\nDemo ready: ${Object.keys(PEOPLE).length} accounts, ${6 + SHARES.length} trips, ${photos} photos (${realCount ? `real photos for ${realCount} places` : "generated postcards — add real ones in scripts/demo-photos"}).\n`);
+  console.log(`\nDemo ready: ${Object.keys(PEOPLE).length} accounts, ${7 + SHARES.length} trips, ${photos} photos (${realCount ? `real photos for ${realCount} places` : "generated postcards — add real ones in scripts/demo-photos"}).\n`);
   console.log("Log in as any of these, password:", PASSWORD);
   for (const p of Object.values(PEOPLE)) console.log(`  ${p.name.padEnd(10)} ${p.email}`);
   console.log(`
@@ -439,7 +469,8 @@ Demo path as Ee Xin:
   Home → Tokyo → today's weather and Trip intel (alerts appear only for real nearby events)
   Home → Tokyo → "2 photos need a place" → place them on the map
   Home → accept Qii's Penang invite
-  Trips → Planned → Osaka → Edit → Build my itinerary
+  Profile → "Your travel style": Ato read Bali, Seoul and Hong Kong (early riser, long meals, skips shopping)
+  Trips → Planned → Osaka → Edit → Build my itinerary (days start at 7:45, meals get 90 min, blended with Max)
   Community → trending destinations, "Happening now", and twelve public trips
   Profile → Friends → Add friend → Kai appears under "You travelled with them"; search @max or eexin@demo.tabiato.app
   Bali → members → Kai is view-only; the ••• menu changes that

@@ -537,3 +537,103 @@ test("trending destinations group public trips by city, most shared first", () =
   assert.equal(placeName({ destination: null, name: "Weekend away" }), "Weekend away");
 });
 
+
+// ---------- travel style (features/planner/style.ts) ----------
+import { blendStyles, clock, describeStyle, dwell, learnStyle, rhythm, type History } from "../src/features/planner/style";
+
+/** A traveller's finished trips from a compact spec: [trip, date, time, category, photos, gapMin, stars?] */
+function historyOf(rows: [string, string, string, string, number, number, number?][]): History {
+  const h: History = { places: [], photos: [] };
+  rows.forEach(([trip, date, time, category, photos, gap, stars], i) => {
+    const first = Date.parse(`${date}T${time}:00Z`);
+    const iso = (k: number) => new Date(first + k * gap * 60000).toISOString();
+    // places a few hundred metres apart, so travel between them is about a quarter of an hour
+    h.places.push({ id: `p${i}`, trip_id: trip, category, lat: 1 + i * 0.003, lng: 100, first_seen_at: iso(0), last_seen_at: iso(photos - 1), stars: stars ?? null });
+    for (let k = 0; k < photos; k++) h.photos.push({ trip_id: trip, taken_at: iso(k) });
+  });
+  return h;
+}
+
+// an early riser who keeps to two places a day, lingers over food and loves it, and skips shopping
+const EARLY_FOODIE = historyOf([
+  ["a", "2026-01-10", "07:30", "food", 5, 18, 5], ["a", "2026-01-10", "10:00", "culture", 3, 12, 4], ["a", "2026-01-10", "17:30", "nature", 4, 12, 4],
+  ["a", "2026-01-11", "07:45", "nature", 3, 12, 4], ["a", "2026-01-11", "18:00", "food", 5, 18, 5],
+  ["b", "2026-03-02", "08:00", "culture", 3, 12, 3], ["b", "2026-03-02", "11:30", "food", 5, 20, 5], ["b", "2026-03-02", "17:45", "shopping", 3, 10, 2],
+  ["b", "2026-03-03", "07:40", "nature", 4, 12, 4], ["b", "2026-03-03", "10:30", "shopping", 2, 12, 2],
+]);
+
+test("rhythm: when your days start and end, from full days only", () => {
+  const r = rhythm(EARLY_FOODIE.photos);
+  assert.equal(r.days, 4);
+  assert.equal(clock(r.dayStart!), "7:30am");          // first photos 7:30, 7:45, 8:00, 7:40 → median 7:42, rounded down
+  assert.equal(clock(r.dayEnd!), "6:45pm");            // last photos 18:06, 19:12, 18:05 → median + 30 min, rounded up
+  // a day with only two photos, or a lie-in that starts after 1pm, says nothing about your rhythm
+  const lazy = rhythm([...EARLY_FOODIE.photos, ...["14:00", "14:20", "15:00"].map((t) => ({ trip_id: "c", taken_at: `2026-04-01T${t}:00Z` }))]);
+  assert.equal(lazy.dayStart, r.dayStart);
+  assert.equal(rhythm(EARLY_FOODIE.photos.slice(0, 8)).dayStart, null); // not enough days yet
+});
+
+test("dwell: how long you stay, per kind of place", () => {
+  const d = dwell(EARLY_FOODIE.places);
+  assert.ok(d.food! >= 90, `food ${d.food}`);           // long meals: well over the 60-minute default
+  assert.ok(d.nature! >= 30 && d.nature! <= 180);
+  assert.equal(d.stay, undefined);
+  assert.deepEqual(dwell(EARLY_FOODIE.places.slice(0, 1)), {}); // one sample is not a habit
+});
+
+test("learnStyle: the whole picture, and what Ato says about it", () => {
+  const l = learnStyle(EARLY_FOODIE);
+  assert.deepEqual(l.boost, ["food"]);
+  assert.deepEqual(l.avoid, ["shopping"]);
+  assert.equal(l.pace, "slow");
+  assert.equal(l.stopsPerDay, 2.5);
+  assert.ok(l.interests!.includes("food") && !l.interests!.includes("shopping"));
+  assert.deepEqual(l.evidence, { trips: 2, days: 4, places: 10 });
+  assert.ok(l.notes.some((n) => n.startsWith("You're usually out by 7:30am")));
+  assert.ok(l.notes.some((n) => /about \d+ min at food places, so meals get more time/.test(n)));
+  const card = describeStyle(l);
+  assert.deepEqual(card.tags.slice(0, 2), ["Early riser", "Slow pace"]);
+  assert.ok(card.tags.includes("Lingers over meals") && card.tags.includes("Loves food") && card.tags.includes("Skips shopping"));
+  assert.match(card.line!, /^I noticed you're out by 7:30am, fit in about 2–3 places a day and give meals about \d+ minutes\.$/);
+  // nothing finished yet: nothing to say, nothing to change
+  const none = learnStyle({ places: [], photos: [] });
+  assert.equal(describeStyle(none).line, null);
+  assert.equal(none.dayStart, null);
+  assert.deepEqual(none.notes, []);
+});
+
+test("group plans blend everyone's style; people with no trips don't count", () => {
+  const me = learnStyle(EARLY_FOODIE);
+  const owl = { ...learnStyle({ places: [], photos: [] }), dayStart: 10 * 60 + 30, dayEnd: 23 * 60, ratings: { food: 4, shopping: 4.5 }, durations: { food: 60 } };
+  const g = blendStyles([{ name: "Ee Xin", style: me }, { name: "Max", style: owl }, { name: "Kai", style: null }]);
+  assert.equal(g.dayStart, Math.round(((me.dayStart! + owl.dayStart) / 2) / 15) * 15);
+  assert.equal(g.dayEnd, Math.round(((me.dayEnd! + owl.dayEnd) / 2) / 15) * 15);
+  assert.ok(!g.avoid.includes("shopping"));            // Max likes it, so it is no longer left out
+  assert.equal(g.notes[0], "I blended what Ee Xin and Max enjoyed on past trips.");
+  assert.equal(blendStyles([{ name: "Ee Xin", style: me }]), me);
+  assert.match(blendStyles([{ name: "Ee Xin", style: me }, { name: "Kai", style: null }]).notes[0], /Only Ee Xin has finished trips/);
+  // far-apart mornings show on the preference board
+  const c = groupConflicts([{ name: "Ee Xin", start: me.dayStart }, { name: "Max", start: owl.dayStart }]);
+  assert.deepEqual(c.map((x) => x.title), ["Early birds and late starters"]);
+  assert.match(c[0].detail, /Ee Xin is usually out by 7:30am, Max by 10:30am/);
+});
+
+test("the planner follows your rhythm and how long you stay", () => {
+  const learned = { ...learnStyle(EARLY_FOODIE), dayEnd: 12 * 60 };
+  const C = (ref: string, lat: number, category: Candidate["category"]): Candidate => ({ ref, name: ref, lat, lng: 135.5, category, notable: true });
+  const out = buildItinerary({
+    userStops: [], candidates: [C("ramen", 34.69, "food"), C("shrine", 34.691, "culture"), C("park", 34.692, "nature")],
+    days: 1, pace: "packed", interests: [], center: { lat: 34.69, lng: 135.5 }, learned,
+  });
+  assert.equal(out[0].start, "07:30");                 // your start, not the packed pace's 08:00
+  const food = out.find((s) => s.category === "food");
+  if (food) assert.equal(food.duration, learned.durations!.food);
+  assert.ok(out.every((s) => toMinutes(s.start) < 12 * 60)); // nothing new after your usual finish
+  // the AI plan too: your visit length wins over the model's guess, and late picks are dropped
+  const ai = aiPlanSchema.parse({ days: [{ day: 1, stops: [{ id: "r1", start: "08:00", minutes: 30 }, { id: "m1", start: "13:00", minutes: 60 }] }] });
+  const plan = applyAiPlan(ai, { userStops: [], candidates: [C("r1", 34.68, "food"), C("m1", 34.681, "culture")], days: 1, pace: "balanced", learned })!.plan;
+  assert.deepEqual(plan.map((s) => s.ref), ["r1"]);
+  assert.equal(plan[0].duration, learned.durations!.food);
+  assert.equal(plan[0].start, "07:30");                // the day starts when you usually head out, not when the model guessed
+});
+const toMinutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));

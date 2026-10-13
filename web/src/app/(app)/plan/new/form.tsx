@@ -8,9 +8,13 @@ import { FormMessage, Submit } from "@/components/submit";
 import type { TravelStyle } from "@/lib/types";
 import { Ato } from "@/components/ato";
 
-export function PlanForm({ style }: { style: TravelStyle }) {
+export function PlanForm({ style, suggested }: { style: TravelStyle; suggested: { pace: string | null; interests: string[] } }) {
   const [state, action] = useActionState<PlanState, FormData>(createPlan, {});
   const v = state.values;
+  // what your past trips show wins over what you told us at sign-up; either way you can change it
+  const fromTrips = Boolean(suggested.pace || suggested.interests.length);
+  const interests = suggested.interests.length ? suggested.interests : style.interests ?? [];
+  const pace = suggested.pace ?? style.pace ?? "balanced";
   return (
     // redrawn after each answer (key) so the form keeps what was typed
     <form key={state.n ?? 0} action={action} className="space-y-4">
@@ -44,13 +48,19 @@ export function PlanForm({ style }: { style: TravelStyle }) {
       <Field label="Budget (RM, optional)" name="budget" inputMode="decimal" placeholder="3000" defaultValue={v?.budget} />
       <fieldset>
         <legend className="mb-1 text-[11px] font-bold text-ink">Preferences</legend>
-        <p className="mb-2 text-[11px] text-muted">Pulled from your profile — tweak for this trip.</p>
-        <Chips name="interests" type="checkbox" defaultValue={v?.interests ?? style.interests ?? []}
+        {fromTrips ? (
+          <p className="mb-2 flex items-center gap-2 text-[11px] text-muted">
+            <Ato size={28} /><span>I picked these from your past trips. Change them for this one if you like.</span>
+          </p>
+        ) : (
+          <p className="mb-2 text-[11px] text-muted">Pulled from your profile — tweak for this trip.</p>
+        )}
+        <Chips name="interests" type="checkbox" defaultValue={v?.interests ?? interests}
           options={["Food", "Nature", "Culture", "Shopping"].map((x) => ({ value: x.toLowerCase(), label: x }))} />
       </fieldset>
       <fieldset>
         <legend className="mb-2 text-[11px] font-bold text-ink">Pace</legend>
-        <Chips name="pace" defaultValue={v?.pace ?? style.pace ?? "balanced"}
+        <Chips name="pace" defaultValue={v?.pace ?? pace}
           options={[{ value: "slow", label: "Slow" }, { value: "balanced", label: "Balanced" }, { value: "packed", label: "Packed" }]} />
       </fieldset>
       <FormMessage error={state.error} />

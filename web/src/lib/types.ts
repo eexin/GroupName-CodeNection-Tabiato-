@@ -27,6 +27,8 @@ export type TravelStyle = {
   budget?: "budget" | "mid" | "luxury";
   interests?: string[];
   pace?: "slow" | "balanced" | "packed";
+  /** What Ato learned from your finished trips (features/planner/style.ts); written by the app, never typed in. */
+  learned?: unknown;
 };
 
 export type Trip = {

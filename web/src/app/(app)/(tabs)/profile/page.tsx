@@ -8,6 +8,9 @@ import { settingOn, type Settings } from "@/lib/types";
 import { getMyTrips } from "@/features/trips/data";
 import { avatarFor } from "@/lib/people";
 import { lookFromUrl } from "@/lib/character";
+import { Ato } from "@/components/ato";
+import { learnForUser } from "@/features/planner/learn";
+import { describeStyle } from "@/features/planner/style";
 
 const THEMES = [
   { id: "water", name: "Water World", colors: ["#7FC9C2", "#0E4C55"] },
@@ -18,10 +21,12 @@ const THEMES = [
 /** 24 Profile & settings. */
 export default async function ProfilePage() {
   const { supabase, user, profile } = await requireProfile();
-  const [trips, { count: unread }] = await Promise.all([
+  const [trips, { count: unread }, learned] = await Promise.all([
     getMyTrips(supabase, user.id),
     supabase.from("messages").select("id", { count: "exact", head: true }).eq("recipient", user.id).is("read_at", null),
+    learnForUser(supabase, user.id),
   ]);
+  const style = describeStyle(learned);
   const stats = [
     [trips.length, "trips"],
     [trips.reduce((n, t) => n + t.memories, 0), "memories"],
@@ -63,6 +68,29 @@ export default async function ProfilePage() {
 
       <div className="px-6">
         <InstallHint />
+        {settingOn(profile.settings, "ato_insights") && (
+          <section aria-labelledby="style-title" className="mt-6 rounded-[18px] bg-card p-4 shadow-card">
+            <div className="flex items-start gap-3">
+              <Ato size={44} />
+              <div className="min-w-0">
+                <h2 id="style-title" className="text-[13px] font-bold text-ink">Your travel style</h2>
+                <p className="mt-0.5 text-[12px] leading-snug text-body">
+                  {style.line ?? "Finish a trip and rate a few places, and I'll learn how you like to travel."}
+                </p>
+              </div>
+            </div>
+            {style.tags.length > 0 && (
+              <ul className="mt-3 flex flex-wrap gap-1.5">
+                {style.tags.map((t) => <li key={t} className="rounded-full bg-surface px-3 py-1 text-[11px] font-medium text-deep">{t}</li>)}
+              </ul>
+            )}
+            {learned.evidence && learned.evidence.trips > 0 && (
+              <p className="mt-3 text-[10.5px] text-muted">
+                From {learned.evidence.trips} finished {learned.evidence.trips === 1 ? "trip" : "trips"} and {learned.evidence.places} places. I plan your next trip around it.
+              </p>
+            )}
+          </section>
+        )}
         <h2 className="mt-6 text-[11px] font-bold text-ink">Map theme</h2>
         <p className="text-[11px] text-muted">Changes how your memory map looks.</p>
         <div className="mt-3 grid grid-cols-3 gap-2">

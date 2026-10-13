@@ -9,9 +9,9 @@ import { categorise } from "@/lib/categories";
 import { askAtoForPlaces, cachedPois, checkNamedPlaces, geocodeDestination, mapPlacesIn, nearbyPois, POI_BUDGET, savePois, suggestCities } from "@/features/planner/osm";
 import { isTooBig } from "@/features/planner/destination";
 import { STAYS_SYSTEM, applyStays, boxAround, budgetTier, eatsNearStops, rankStays, staysPrompt, staysSchema, type MapPlace } from "@/features/planner/stays";
-import { buildItinerary, type Pace, type Scheduled, type UserStop } from "@/features/planner/itinerary";
+import { buildItinerary, startOfDay, toHHMM, type Pace, type Scheduled, type UserStop } from "@/features/planner/itinerary";
 import { AI_PLAN_SYSTEM, aiPlanPrompt, aiPlanSchema, applyAiPlan, perDayRange, shortlist } from "@/features/planner/ai-plan";
-import { learnForUser } from "@/features/planner/learn";
+import { learnForTrip } from "@/features/planner/learn";
 import type { ActionResult } from "@/lib/types";
 
 export type PlanValues = { destination: string; start_date: string; end_date: string; budget: string; pace: string; interests: string[] };
@@ -180,7 +180,7 @@ export async function buildPlan(tripId: string) {
     n ? checkNamedPlaces(center, { destination, places: n.places, skip, deadline: started + 30_000, stop: () => overpassAnswered }) : []);
   const [found, learned] = await Promise.all([
     saved ?? nearbyPois(supabase, trip.dest_lat, trip.dest_lng, POI_BUDGET.build).then((p) => { overpassAnswered = p.length > 0; return p; }),
-    learnForUser(supabase, user.id), // the memory → planning loop
+    learnForTrip(supabase, tripId, user.id), // the memory → planning loop: your style, blended with the group's
   ]);
   let candidates = found;
   if (!candidates.length) {
@@ -195,7 +195,7 @@ export async function buildPlan(tripId: string) {
   const range = perDayRange(pace, learned);
   const ai = await aiJSON(
     "plan_itinerary",
-    AI_PLAN_SYSTEM(range.min, range.max, pace === "packed" ? "08:00" : pace === "slow" ? "09:30" : "09:00"),
+    AI_PLAN_SYSTEM(range.min, range.max, toHHMM(startOfDay(pace, learned)), toHHMM(learned.dayEnd ?? 21 * 60)),
     aiPlanPrompt({ destination, startDate: trip.start_date, days, pace, interests, budget: trip.budget ?? null, userStops, shortlist: options, learned }),
     aiPlanSchema,
     { timeoutMs: Math.max(4_000, Math.min(15_000, Math.floor(left(55_000) / 2))) },

@@ -33,6 +33,14 @@ export type Learned = {
   ratings: Partial<Record<Category, number>>;      // your average rating per category
   maxPerDay: number | null;                        // lighter days if your lighter days scored better
   notes: string[];                                 // shown to the traveller, in Ato's voice
+  // from photo times (features/planner/style.ts); missing when there is not enough evidence
+  dayStart?: number | null;                        // minutes after midnight you are usually out by
+  dayEnd?: number | null;                          // minutes after midnight you usually wrap up by
+  durations?: Partial<Record<Category, number>>;   // how long you usually stay, per category
+  stopsPerDay?: number | null;                     // places you usually visit in a day
+  pace?: Pace | null;                              // suggested pace for a new plan
+  interests?: Category[];                          // suggested interests for a new plan
+  evidence?: { trips: number; days: number; places: number };
 };
 
 const avgOf = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -80,6 +88,11 @@ export function learnFromHistory(input: {
 export const STOPS_PER_DAY: Record<Pace, number> = { slow: 3, balanced: 4, packed: 6 };
 export const DAY_START: Record<Pace, number> = { slow: 9 * 60 + 30, balanced: 9 * 60, packed: 8 * 60 };
 export const DURATION: Record<Category, number> = { food: 60, culture: 90, nature: 90, shopping: 60, stay: 30, other: 60 };
+
+/** When a day starts: when you are usually out (learned from your photos), else the pace's default. */
+export const startOfDay = (pace: Pace, learned?: Learned) => learned?.dayStart ?? DAY_START[pace];
+/** How long a stop lasts: how long you usually stay at this kind of place, else the default. */
+export const durationFor = (category: Category, learned?: Learned) => learned?.durations?.[category] ?? DURATION[category];
 
 export const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
 export const toHHMM = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
@@ -175,33 +188,36 @@ export function buildItinerary(input: {
     const fixedSorted = fixedIdx.map((k) => ordered[k]).sort((a, z) => toMin(a.u!.fixed_time!) - toMin(z.u!.fixed_time!));
     fixedIdx.forEach((k, j) => { ordered[k] = fixedSorted[j]; });
 
-    let clock = DAY_START[input.pace];
-    ordered.forEach((r, position) => {
-      if (position > 0) {
-        const prev = ordered[position - 1];
-        clock += travelMinutes(distanceM(prev.lat, prev.lng, r.lat, r.lng) / 1000);
-      }
-      if (r.u?.fixed_time) clock = Math.max(clock, toMin(r.u.fixed_time));
+    // your usual rhythm (learned) wins over the pace's default start; Ato adds nothing after your usual finish
+    let clock = startOfDay(input.pace, input.learned);
+    const end = input.learned?.dayEnd ?? null;
+    let prev: Row | null = null, position = 0;
+    for (const r of ordered) {
+      let t = clock + (prev ? travelMinutes(distanceM(prev.lat, prev.lng, r.lat, r.lng) / 1000) : 0);
+      if (r.u?.fixed_time) t = Math.max(t, toMin(r.u.fixed_time));
+      if (!r.u && end !== null && t >= end) continue;
       const category = cat(r.u ? r.u.category : r.c!.category);
-      const duration = DURATION[category];
+      const duration = durationFor(category, input.learned);
       out.push(
         r.u
-          ? { id: r.u.id, name: r.u.name, lat: r.lat, lng: r.lng, category, source: "user", reason: r.u.fixed_time ? `Fixed at ${r.u.fixed_time.slice(0, 5)}` : null, day: i + 1, position, start: toHHMM(clock), duration }
+          ? { id: r.u.id, name: r.u.name, lat: r.lat, lng: r.lng, category, source: "user", reason: r.u.fixed_time ? `Fixed at ${r.u.fixed_time.slice(0, 5)}` : null, day: i + 1, position, start: toHHMM(t), duration }
           : { id: null, ref: r.c!.ref, name: r.c!.name, lat: r.lat, lng: r.lng, category, source: "ato",
               reason: input.learned?.ratings[category] && boost.has(category)
                 ? `${CATEGORY_LABEL[category]} — you rated it ${input.learned.ratings[category]}★ on past trips`
                 : wanted.has(category) ? `${CATEGORY_LABEL[category]} — one of your interests, close by` : `Close to the rest of the day`,
-              day: i + 1, position, start: toHHMM(clock), duration },
+              day: i + 1, position, start: toHHMM(t), duration },
       );
-      clock += duration;
-    });
+      position++;
+      clock = t + duration;
+      prev = r;
+    }
   });
   return out;
 }
 
 /** Figma 30 — where the group disagrees. The leader decides; nothing is scored. */
 export function groupConflicts(
-  members: { name: string; budget?: string; pace?: string; interests?: string[] }[],
+  members: { name: string; budget?: string; pace?: string; interests?: string[]; start?: number | null }[],
   stops: { name: string; by: string; fixed_day: number | null; fixed_time: string | null }[] = [],
 ) {
   const out: { title: string; detail: string }[] = [];
@@ -218,6 +234,15 @@ export function groupConflicts(
   if (budgets.length > 1) out.push({ title: "Budget spread", detail: members.filter((m) => m.budget).map((m) => `${m.name}: ${m.budget}`).join(", ") });
   const paces = [...new Set(members.map((m) => m.pace).filter(Boolean))];
   if (paces.length > 1) out.push({ title: "Pace", detail: members.filter((m) => m.pace).map((m) => `${m.name} likes ${m.pace}`).join(", ") });
+  // learned from photos: when each person is usually out. Far apart → someone waits every morning
+  const starts = members.filter((m): m is typeof m & { start: number } => typeof m.start === "number");
+  if (starts.length > 1) {
+    const early = starts.reduce((a, b) => (b.start < a.start ? b : a)), late = starts.reduce((a, b) => (b.start > a.start ? b : a));
+    if (late.start - early.start >= 90) {
+      const at = (m: number) => `${Math.floor(m / 60) % 12 || 12}${m % 60 ? `:${String(m % 60).padStart(2, "0")}` : ""}${m < 720 ? "am" : "pm"}`;
+      out.push({ title: "Early birds and late starters", detail: `${early.name} is usually out by ${at(early.start)}, ${late.name} by ${at(late.start)}. Days will start in between.` });
+    }
+  }
   const lists = members.map((m) => new Set(m.interests ?? [])).filter((s) => s.size);
   if (lists.length > 1) {
     const shared = [...lists[0]].filter((x) => lists.every((s) => s.has(x)));

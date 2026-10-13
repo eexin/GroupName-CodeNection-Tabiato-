@@ -2,7 +2,7 @@ import { z } from "zod";
 import { distanceM } from "@/lib/geo";
 import { CATEGORY_LABEL, type Category } from "@/lib/categories";
 import {
-  DAY_START, DURATION, STOPS_PER_DAY, cat, toHHMM, toMin, travelMinutes,
+  DURATION, STOPS_PER_DAY, cat, startOfDay, toHHMM, toMin, travelMinutes,
   type Candidate, type Learned, type Pace, type Scheduled, type UserStop,
 } from "@/features/planner/itinerary";
 
@@ -34,15 +34,15 @@ export const aiPlanSchema = z.object({
 });
 export type AiPlan = z.infer<typeof aiPlanSchema>;
 
-export const AI_PLAN_SYSTEM = (minPerDay: number, maxPerDay: number, dayStart: string) => `You are Ato, a cheerful goldfish travel planner. Build a complete, realistic day-by-day itinerary for this traveller.
+export const AI_PLAN_SYSTEM = (minPerDay: number, maxPerDay: number, dayStart: string, dayEnd = "21:00") => `You are Ato, a cheerful goldfish travel planner. Build a complete, realistic day-by-day itinerary for this traveller.
 Rules:
 - Use ONLY places from "must_visit" (by their "id") and "candidates" (by their "ref"). Never invent a place.
 - Include every must_visit place exactly once. If it has fixed_day, put it on that day. If it has fixed_time, start it at or after that time.
-- Every day has between ${minPerDay} and ${maxPerDay} stops in total, must_visit places included. Days start around ${dayStart} and finish by 21:00.
+- Every day has between ${minPerDay} and ${maxPerDay} stops in total, must_visit places included. Days start around ${dayStart} and finish by ${dayEnd}.
 - Plan like a local: keep each day in one area (use lat/lng), eat lunch between 11:30 and 13:30 and dinner between 18:00 and 20:00 when food places exist, put parks, temples and viewpoints in the morning, markets and night views in the evening.
 - Favour categories in "interests" and "loved". Leave out categories in "avoid" unless they are must_visit.
 - Make every day feel different. Do not put the same category three times in a row.
-- For each stop give "start" (HH:MM, 24-hour) and "minutes" (how long to stay, 30 to 180).
+- For each stop give "start" (HH:MM, 24-hour) and "minutes" (how long to stay, 30 to 180). When "typical_minutes" has the stop's category, use that: it is how long this traveller really stays.
 - For each stop you chose from candidates, give "reason": one short sentence, at most 15 words, in Ato's voice, about why it suits this traveller.
 - Base each reason only on the place's name, category and the traveller. Never claim a dish, cuisine, price, award or opening hours the data does not show.
 - Give each day a short, fun "title" of at most 6 words.
@@ -92,6 +92,8 @@ export function aiPlanPrompt(input: {
       }),
     },
     loved: (input.learned?.boost ?? []).map((c) => CATEGORY_LABEL[c]),
+    // learned from the traveller's own photos (style.ts); only present with enough evidence
+    typical_minutes: input.learned?.durations ?? {},
     avoid: (input.learned?.avoid ?? []).map((c) => CATEGORY_LABEL[c]),
     must_visit: input.userStops.map((s) => ({
       id: s.id, name: s.name, category: cat(s.category), fixed_day: s.fixed_day ?? null,
@@ -168,26 +170,33 @@ export function applyAiPlan(ai: AiPlan, input: {
     const rows = b.map((r, k) => ({ r, k, t: r.u?.fixed_time ? Math.max(toMin(r.u.fixed_time), r.aiStart ?? 0) : r.aiStart }))
       .sort((a, z) => (a.t ?? 9e9) - (z.t ?? 9e9) || a.k - z.k)
       .map((x) => x.r);
-    let clock = DAY_START[input.pace];
-    rows.forEach((r, position) => {
+    let clock = startOfDay(input.pace, input.learned);
+    const end = input.learned?.dayEnd ?? null;   // your usual finish: Ato adds nothing after it
+    let prev: Row | null = null, position = 0;
+    for (const r of rows) {
       const lat = r.u ? r.u.lat : r.c!.lat, lng = r.u ? r.u.lng : r.c!.lng;
-      if (position > 0) {
-        const p = rows[position - 1];
-        clock += travelMinutes(distanceM(p.u ? p.u.lat : p.c!.lat, p.u ? p.u.lng : p.c!.lng, lat, lng) / 1000);
-      }
-      if (r.aiStart !== null && r.aiStart > clock && r.aiStart < DAY_END) clock = r.aiStart;
-      if (r.u?.fixed_time) clock = Math.max(clock, toMin(r.u.fixed_time));
+      let t = clock;
+      if (prev) t += travelMinutes(distanceM(prev.u ? prev.u.lat : prev.c!.lat, prev.u ? prev.u.lng : prev.c!.lng, lat, lng) / 1000);
+      // the day starts when you usually head out (code owns that); later stops may wait for the model's time
+      if (prev && r.aiStart !== null && r.aiStart > t && r.aiStart < (end ?? DAY_END)) t = r.aiStart;
+      if (r.u?.fixed_time) t = Math.max(t, toMin(r.u.fixed_time));
+      // an Ato pick the model put after your usual finish is dropped, not squeezed in earlier
+      if (!r.u && end !== null && (t >= end || (r.aiStart ?? 0) >= end)) continue;
       const category: Category = cat(r.u ? r.u.category : r.c!.category);
-      const duration = Math.round(Math.min(180, Math.max(30, r.minutes ?? DURATION[category])) / 5) * 5;
+      // how long you really stay (learned) wins over the model's guess
+      const learnedMin = input.learned?.durations?.[category];
+      const duration = learnedMin ?? Math.round(Math.min(180, Math.max(30, r.minutes ?? DURATION[category])) / 5) * 5;
       plan.push(r.u
         ? { id: r.u.id, name: r.u.name, lat, lng, category, source: "user",
             reason: r.u.fixed_time ? `Fixed at ${r.u.fixed_time.slice(0, 5)}` : null,
-            day: i + 1, position, start: toHHMM(clock), duration }
+            day: i + 1, position, start: toHHMM(t), duration }
         : { id: null, ref: r.c!.ref, name: r.c!.name, lat, lng, category, source: "ato",
             reason: r.reason ?? "Close to the rest of the day",
-            day: i + 1, position, start: toHHMM(clock), duration });
-      clock += duration;
-    });
+            day: i + 1, position, start: toHHMM(t), duration });
+      position++;
+      clock = t + duration;
+      prev = r;
+    }
   });
 
   const titles = ai.days

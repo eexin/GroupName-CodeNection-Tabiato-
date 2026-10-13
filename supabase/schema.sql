@@ -17,7 +17,7 @@ create table public.profiles (
   id            uuid primary key references auth.users (id) on delete cascade,
   display_name  text not null default '',
   avatar_url    text,
-  travel_style  jsonb not null default '{}'::jsonb,   -- budget band, interests, pace (Figma 04)
+  travel_style  jsonb not null default '{}'::jsonb,   -- budget band, interests, pace (Figma 04); .learned = the style Ato learned from finished trips
   onboarded_at  timestamptz,                          -- null until the profile setup screen is done
   username      text unique check (username ~ '^[a-z0-9_]{3,24}$'),   -- tabiato.app/u/<username>
   -- Figma 24 MEMORY switches
