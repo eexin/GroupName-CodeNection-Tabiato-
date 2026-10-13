@@ -6,7 +6,7 @@ import { z } from "zod";
 import { aiJSON } from "@/lib/ai";
 import { requireUser } from "@/features/auth/guards";
 import { categorise } from "@/lib/categories";
-import { askAtoForPlaces, checkNamedPlaces, geocodeDestination, mapPlacesIn, nearbyPois, POI_BUDGET, suggestCities } from "@/features/planner/osm";
+import { askAtoForPlaces, cachedPois, checkNamedPlaces, geocodeDestination, mapPlacesIn, nearbyPois, POI_BUDGET, savePois, suggestCities } from "@/features/planner/osm";
 import { isTooBig } from "@/features/planner/destination";
 import { STAYS_SYSTEM, applyStays, boxAround, budgetTier, eatsNearStops, rankStays, staysPrompt, staysSchema, type MapPlace } from "@/features/planner/stays";
 import { buildItinerary, type Pace, type Scheduled, type UserStop } from "@/features/planner/itinerary";
@@ -170,18 +170,23 @@ export async function buildPlan(tripId: string) {
   const started = Date.now();
   const left = (endAt: number) => started + endAt - Date.now();
 
-  // Ato's backup list of place names is asked for alongside Overpass, so it is ready if needed
-  const named = askAtoForPlaces({ destination, interests, skip: userStops.map((s) => s.name) });
+  // A city planned before starts instantly from its saved places. A new one asks Overpass, and at
+  // the same time Ato names well-known places and the map checks them, so a busy Overpass costs
+  // no extra time and Ato still has most of the minute left to plan the days.
+  const skip = userStops.map((s) => s.name);
+  const saved = await cachedPois(supabase, trip.dest_lat, trip.dest_lng);
+  let overpassAnswered = false;
+  const checked = saved ? Promise.resolve([]) : askAtoForPlaces({ destination, interests, skip }).then((n) =>
+    n ? checkNamedPlaces(center, { destination, places: n.places, skip, deadline: started + 30_000, stop: () => overpassAnswered }) : []);
   const [found, learned] = await Promise.all([
-    // the build screen shows progress, so this is the one place worth waiting for OpenStreetMap
-    nearbyPois(supabase, trip.dest_lat, trip.dest_lng, POI_BUDGET.build),
+    saved ?? nearbyPois(supabase, trip.dest_lat, trip.dest_lng, POI_BUDGET.build).then((p) => { overpassAnswered = p.length > 0; return p; }),
     learnForUser(supabase, user.id), // the memory → planning loop
   ]);
-  // Overpass busy → keep only the names from Ato that the map confirms near the destination
   let candidates = found;
   if (!candidates.length) {
-    const names = await named;
-    if (names) candidates = await checkNamedPlaces(supabase, center, { destination, places: names.places, skip: userStops.map((s) => s.name), deadline: started + 38_000 });
+    candidates = await checked;
+    // a handful is enough to plan with and worth keeping; fewer, and next time tries Overpass again
+    if (candidates.length >= 4) await savePois(supabase, trip.dest_lat, trip.dest_lng, candidates);
   }
 
   // Ato plans the whole trip from real places only. n8n and then Groq each get half of what is

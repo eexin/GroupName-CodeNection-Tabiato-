@@ -120,6 +120,19 @@ export async function suggestCities(area: { name: string; countryCode: string | 
   return out;
 }
 
+const poiKey = (lat: number, lng: number) => `${lat.toFixed(2)},${lng.toFixed(2)}`;
+
+/** The places already found for this destination, if any (from Overpass or from Ato's checked names). */
+export async function cachedPois(supabase: SupabaseClient, lat: number, lng: number): Promise<Candidate[] | null> {
+  const { data } = await supabase.from("poi_cache").select("pois").eq("key", poiKey(lat, lng)).maybeSingle();
+  return (data?.pois as Candidate[] | undefined)?.length ? (data!.pois as Candidate[]) : null;
+}
+
+/** Keep a destination's places so the next plan for it starts instantly. */
+export async function savePois(supabase: SupabaseClient, lat: number, lng: number, pois: Candidate[]) {
+  await supabase.from("poi_cache").insert({ key: poiKey(lat, lng), pois });
+}
+
 /**
  * Named, real points of interest near a destination. Cached per destination in `poi_cache`, so
  * a destination is only ever fetched once; everyone planning the same city reads the cached rows.
@@ -133,9 +146,9 @@ export async function nearbyPois(
   lng: number,
   budgetMs: number = POI_BUDGET.render,
 ): Promise<Candidate[]> {
-  const key = `${lat.toFixed(2)},${lng.toFixed(2)}`;
-  const { data: hit } = await supabase.from("poi_cache").select("pois").eq("key", key).maybeSingle();
-  if (hit) return hit.pois as Candidate[];
+  const key = poiKey(lat, lng);
+  const hit = await cachedPois(supabase, lat, lng);
+  if (hit) return hit;
 
   const until = coolOff.get(key);
   if (until && until > Date.now()) return [];
@@ -160,7 +173,7 @@ export async function nearbyPois(
     const out = await askOverpass(url, query(Math.max(3, Math.floor(slice / 1000))), slice);
     if (out.length) {
       coolOff.delete(key);
-      await supabase.from("poi_cache").insert({ key, pois: out });
+      await savePois(supabase, lat, lng, out);
       return out;
     }
   }
@@ -218,31 +231,25 @@ export function askAtoForPlaces(input: { destination: string; interests: string[
 }
 
 /**
- * The backup when Overpass found nothing: keep each name Ato gave only if Nominatim finds it near
+ * The backup when Overpass finds nothing: keep each name Ato gave only if Nominatim finds it near
  * the destination, using the map's name and coordinates. One lookup per second (Nominatim's rule),
- * stopping at `deadline`. Saved to poi_cache like an Overpass answer, so this runs once per city.
+ * stopping at `deadline`, or as soon as `stop()` says Overpass answered after all.
  */
 export async function checkNamedPlaces(
-  supabase: SupabaseClient,
   center: { lat: number; lng: number },
-  input: { destination: string; places: { name: string; kind?: string }[]; skip: string[]; deadline: number },
+  input: { destination: string; places: { name: string; kind?: string }[]; skip: string[]; deadline: number; stop?: () => boolean },
 ): Promise<Candidate[]> {
   const out: Candidate[] = [];
   const refs = new Set<string>();
   let last = 0;
   for (const named of namesToCheck(input.places, input.skip)) {
-    if (Date.now() > input.deadline - 1_500) break;
+    if (input.stop?.() || Date.now() > input.deadline - 1_500) break;
     const wait = last + 1_100 - Date.now();
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     last = Date.now();
     const hits = await searchPlaces(`${named.name}, ${input.destination}`, center);
     const c = toCandidate(named, hits, center);
     if (c && !refs.has(c.ref)) { refs.add(c.ref); out.push(c); }
-  }
-  // a handful of places is enough to plan with and worth keeping; fewer, try Overpass next time
-  if (out.length >= 4) {
-    const key = `${center.lat.toFixed(2)},${center.lng.toFixed(2)}`;
-    await supabase.from("poi_cache").insert({ key, pois: out });
   }
   return out;
 }

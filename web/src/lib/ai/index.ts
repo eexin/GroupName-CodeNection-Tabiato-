@@ -50,6 +50,8 @@ async function viaGroq(system: string, user: string, timeoutMs: number): Promise
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: GROQ_MODEL, temperature: 0.6, response_format: { type: "json_object" },
+        // gpt-oss thinks before it answers; a little thinking is plenty for JSON and much faster
+        ...(GROQ_MODEL.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : {}),
         messages: [{ role: "system", content: system }, { role: "user", content: user }],
       }),
       signal: AbortSignal.timeout(timeoutMs),
