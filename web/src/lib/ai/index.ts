@@ -16,7 +16,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * the itinerary, checked against the real place list) before anything is saved.
  */
 
-export type AiTask = "memory_book" | "insight" | "plan_titles" | "plan_itinerary" | "rain_replan" | "hazard_advice" | "intel_notes" | "note_draft" | "search_summary";
+export type AiTask = "memory_book" | "insight" | "plan_titles" | "plan_itinerary" | "plan_places" | "plan_stays" | "rain_replan" | "hazard_advice" | "intel_notes" | "note_draft" | "search_summary";
 
 // gpt-oss is on every Groq account; some new accounts have no Llama models at all
 const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";

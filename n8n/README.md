@@ -21,6 +21,8 @@ Tasks and models (edit them in the **Pick model for task** node — no app redep
 | --- | --- | --- |
 | memory_book | the memory book | openai/gpt-oss-120b |
 | plan_itinerary | the whole AI itinerary | openai/gpt-oss-120b |
+| plan_places | backup place names when OpenStreetMap is busy, and city suggestions when someone types a whole country (the app checks each one on the map) | openai/gpt-oss-120b |
+| plan_stays | "Where to stay": picks 3 real hotels near the plan and says why | openai/gpt-oss-120b |
 | insight | travel insights line | openai/gpt-oss-120b |
 | intel_notes | trip intel notes | openai/gpt-oss-120b |
 | hazard_advice | travel alert suggestion | openai/gpt-oss-120b |

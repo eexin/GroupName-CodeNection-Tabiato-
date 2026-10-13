@@ -27,3 +27,8 @@ export function bounds(points: { lat: number; lng: number }[]): [[number, number
     [Math.max(...lngs), Math.max(...lats)],
   ];
 }
+
+/** Opens the place in Google Maps (app on phones), where directions are one tap away. */
+export function mapsLink(lat: number, lng: number) {
+  return `https://www.google.com/maps/search/?api=1&query=${lat.toFixed(6)},${lng.toFixed(6)}`;
+}

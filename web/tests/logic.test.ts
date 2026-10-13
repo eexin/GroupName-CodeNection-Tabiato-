@@ -329,3 +329,109 @@ test("AI plan prompt: only real shortlisted places, avoided categories ranked la
   assert.deepEqual(prompt.candidates.map((c: { ref: string }) => c.ref), ["museum", "bar"]);
   assert.equal(prompt.must_visit[0].id, "u");
 });
+
+import { namedSchema, namesToCheck, toCandidate } from "../src/features/planner/named-places";
+
+const OSAKA = { lat: 34.6937, lng: 135.5023 };
+
+test("a name Ato gives is kept only if the map finds it near the destination", () => {
+  const near = toCandidate({ name: "Kuromon Market", kind: "food" },
+    [{ name: "Kuromon Ichiba Market", lat: 34.6655, lng: 135.5068, category: "food", ref: "way/123" }], OSAKA);
+  assert.equal(near?.name, "Kuromon Ichiba Market"); // the map's name, not the model's
+  assert.equal(near?.ref, "way/123");
+  assert.equal(near?.notable, true);
+
+  // same name, wrong city (Tokyo): dropped
+  const far = toCandidate({ name: "Senso-ji" }, [{ name: "Senso-ji", lat: 35.7148, lng: 139.7967, category: "culture", ref: "way/9" }], OSAKA);
+  assert.equal(far, null);
+  // the map found nothing: dropped, never guessed
+  assert.equal(toCandidate({ name: "Made-up Ramen House" }, [], OSAKA), null);
+});
+
+test("the map's category wins over Ato's; Ato's fills in only when the map has none", () => {
+  const hit = (category: "culture" | "other") => [{ name: "X", lat: 34.69, lng: 135.5, category, ref: "node/1" }];
+  assert.equal(toCandidate({ name: "X", kind: "food" }, hit("culture"), OSAKA)?.category, "culture");
+  assert.equal(toCandidate({ name: "X", kind: "Shopping" }, hit("other"), OSAKA)?.category, "shopping");
+  assert.equal(toCandidate({ name: "X", kind: "spaceship" }, hit("other"), OSAKA)?.category, "other");
+});
+
+test("names to check skip the traveller's own places and duplicates", () => {
+  const list = namesToCheck([{ name: "Osaka Castle" }, { name: " Shinsekai " }, { name: "shinsekai" }, { name: "Kuromon Market" }], ["osaka castle"]);
+  assert.deepEqual(list.map((n) => n.name), ["Shinsekai", "Kuromon Market"]);
+  assert.equal(namedSchema.safeParse({ places: [{ name: "A" }] }).success, false); // too short to search
+});
+
+import { applyStays, budgetTier, eatsNearStops, rankStays, type MapPlace } from "../src/features/planner/stays";
+
+const STOPS = [
+  { id: "s1", name: "Osaka Castle", lat: 34.6873, lng: 135.5262, day: 1 },
+  { id: "s2", name: "Dotonbori", lat: 34.6687, lng: 135.5013, day: 2 },
+];
+const place = (ref: string, name: string, lat: number, lng: number, kind = "hotel", stars: number | null = null, cuisine: string | null = null): MapPlace => ({ ref, name, lat, lng, kind, stars, cuisine });
+
+test("the trip budget per day sets the hotel class; the profile band is the fallback", () => {
+  assert.equal(budgetTier(1000, 4, "luxury"), "budget"); // RM250 a day
+  assert.equal(budgetTier(2000, 4, null), "mid");
+  assert.equal(budgetTier(4000, 4, "budget"), "luxury");
+  assert.equal(budgetTier(null, 4, "luxury"), "luxury");
+  assert.equal(budgetTier(null, 4, undefined), "mid");
+});
+
+test("hotels are ranked by distance to the whole plan, and Ato may only pick from that list", () => {
+  const ranked = rankStays([
+    place("node/1", "Far Hotel", 34.75, 135.45),
+    place("node/2", "Middle Hotel", 34.678, 135.513, "hotel", 4),
+    place("node/3", "Namba Hostel", 34.667, 135.502, "hostel"),
+    place("node/4", "", 34.678, 135.513),
+  ], STOPS);
+  assert.deepEqual(ranked.map((h) => h.name), ["Middle Hotel", "Namba Hostel", "Far Hotel"]); // unnamed dropped
+  assert.equal(ranked[1].nearDay, 2);
+
+  const picked = applyStays({ stays: [{ ref: "node/999", reason: "Invented" }, { ref: "node/3", reason: "Steps from Dotonbori!" }, { ref: "node/3", reason: "again" }] }, ranked, "budget");
+  assert.deepEqual(picked.map((h) => h.name), ["Namba Hostel"]);
+  assert.equal(picked[0].reason, "Steps from Dotonbori!");
+
+  // no AI: budget class first by type, then the closest; reasons use the real facts
+  const fallback = applyStays(null, ranked, "budget");
+  assert.equal(fallback[0].name, "Namba Hostel");
+  assert.match(fallback[0].reason, /km from your stops/);
+  assert.equal(applyStays(null, ranked, "luxury")[0].name, "Middle Hotel");
+});
+
+test("each stop lists up to 3 restaurants within a short walk, never itself and never twice", () => {
+  const foods = [
+    place("n/a", "Kani Doraku", 34.6688, 135.5017, "restaurant", null, "seafood"),
+    place("n/b", "Dotonbori", 34.6687, 135.5013, "restaurant"),
+    place("n/c", "Ichiran", 34.6690, 135.5020, "restaurant", null, "ramen"),
+    place("n/d", "Kushikatsu Daruma", 34.6680, 135.5030, "restaurant"),
+    place("n/e", "Mizuno", 34.6685, 135.5010, "restaurant", null, "okonomiyaki"),
+    place("n/f", "Castle Cafe", 34.6870, 135.5255, "restaurant"),
+    place("n/g", "Kyoto Place", 35.0, 135.76, "restaurant"),
+  ];
+  const eats = eatsNearStops(STOPS, foods);
+  assert.deepEqual(eats.s1.map((e) => e.name), ["Castle Cafe"]);
+  assert.equal(eats.s2.length, 3);
+  assert.ok(!eats.s2.some((e) => e.name === "Dotonbori"));
+  assert.ok(eats.s2.every((e) => e.walkMin >= 1 && e.walkMin <= 10));
+  assert.ok(!Object.values(eats).flat().some((e) => e.name === "Kyoto Place"));
+});
+
+import { boxFromNominatim, isTooBig, keepCity } from "../src/features/planner/destination";
+
+test("a whole country or a big island asks for a city; cities never do (real map answers)", () => {
+  // type and width as Nominatim reported them in Oct 2026
+  for (const [name, kind, km] of [["Japan", "country", 2830], ["Bali", "state", 176], ["Hokkaido", "region", 552], ["Okinawa", "province", 878], ["Sabah", "state", 650], ["Jeju", "province", 136]] as const)
+    assert.equal(isTooBig(kind, km), true, name);
+  for (const [name, kind, km] of [["Tokyo", "city", 1741], ["Beijing", "city", 210], ["Singapore", "country", 112], ["Hong Kong", "region", 70], ["Penang", "state", 51], ["Phuket", "province", 104], ["Langkawi", "district", 47]] as const)
+    assert.equal(isTooBig(kind, km), false, name);
+  assert.equal(isTooBig(null, 5000), false);
+});
+
+test("Ato's city suggestions are kept only if the map puts a city-sized place inside the area", () => {
+  const japan = { box: boxFromNominatim(["20.2", "45.7", "122.7", "154.2"], 36.6)!.box, countryCode: "JP" };
+  assert.equal(keepCity({ lat: 34.69, lng: 135.50, kind: "city", km: 25, countryCode: "JP" }, japan), true);   // Osaka
+  assert.equal(keepCity({ lat: 37.57, lng: 126.98, kind: "city", km: 37, countryCode: "KR" }, japan), false);  // Seoul: wrong country
+  assert.equal(keepCity({ lat: 43.43, lng: 142.95, kind: "region", km: 552, countryCode: "JP" }, japan), false); // Hokkaido: still too big
+  assert.equal(keepCity(null, japan), false);
+  assert.equal(boxFromNominatim(["1", "2"], 0), null);
+});

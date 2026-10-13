@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { buildPlan } from "@/features/planner/actions";
+import { addStaysAndFood, buildPlan } from "@/features/planner/actions";
 import Link from "next/link";
 import { Ato } from "@/components/ato";
 
-const STEPS = ["Locking in your must-visit places", "Looking up real places nearby", "Reading what you rated on past trips", "Ato is planning each day", "Fitting meals and walking time", "Checking every place is real"];
+const STEPS = ["Locking in your must-visit places", "Looking up real places nearby", "Reading what you rated on past trips", "Ato is planning each day", "Fitting meals and walking time", "Checking every place is real", "Finding hotels and food nearby"];
 
 /** 31b Itinerary — generating. */
 export function Building({ tripId, name, days }: { tripId: string; name: string; days: number }) {
@@ -18,11 +18,15 @@ export function Building({ tripId, name, days }: { tripId: string; name: string;
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    const tick = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 2500);
-    buildPlan(tripId).then((r) => {
+    // the last step waits for its own call, so the first ones never claim it early
+    const tick = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 2)), 2500);
+    buildPlan(tripId).then(async (r) => {
       clearInterval(tick);
-      if (r && "error" in r && r.error) setError(r.error);
-      else { router.replace(`/plan/${tripId}`); router.refresh(); }
+      if (r && "error" in r && r.error) { setError(r.error); return; }
+      setStep(STEPS.length - 1);
+      // hotels and food are extras: if the lookup fails, the itinerary is still there
+      await addStaysAndFood(tripId).catch(() => null);
+      router.replace(`/plan/${tripId}`); router.refresh();
     });
     return () => clearInterval(tick);
   }, [tripId, router]);

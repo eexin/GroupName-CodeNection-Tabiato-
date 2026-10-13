@@ -6,8 +6,11 @@ import { MemoryMap } from "@/components/memory-map";
 import { BackHeader, Empty, buttonClass } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
 import { CATEGORY_LABEL, type Category } from "@/lib/categories";
-import { distanceM } from "@/lib/geo";
+import { distanceM, mapsLink } from "@/lib/geo";
+import { TIER_LABEL, type Eat, type Stay, type Tier } from "@/features/planner/stays";
 import { formatRange } from "@/lib/time";
+
+const KIND_LABEL: Record<string, string> = { hotel: "Hotel", hostel: "Hostel", guest_house: "Guest house", apartment: "Apartment", motel: "Motel" };
 
 type Stop = { id: string; name: string; lat: number; lng: number; category: string | null; source: "user" | "ato"; reason: string | null; day: number | null; position: number | null; start_time: string | null; duration_min: number | null };
 
@@ -28,6 +31,9 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   let km = 0;
   today.forEach((s, i) => { if (i) km += distanceM(today[i - 1].lat, today[i - 1].lng, s.lat, s.lng) / 1000; });
   const owner = trip.owner_id === user.id;
+  const stays: Stay[] = trip.plan_style?.stays ?? [];
+  const eats: Record<string, Eat[]> = trip.plan_style?.eats ?? {};
+  const tier: Tier | undefined = trip.plan_style?.stay_tier;
 
   return (
     <main className="mx-auto min-h-dvh max-w-[430px] pb-10 lg:max-w-6xl lg:pt-4">
@@ -50,6 +56,31 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
             ))}
           </nav>
           {titles.find((t) => t.day === day) && <p className="mt-3 text-[15px] font-bold text-ink">{titles.find((t) => t.day === day)!.title}</p>}
+
+          {stays.length > 0 && (
+            <details open={day === 1} className="group mt-3 rounded-[16px] bg-card p-4 shadow-card">
+              <summary className="flex min-h-[40px] cursor-pointer list-none items-center gap-3">
+                <Ato size={40} />
+                <span className="flex-1">
+                  <span className="block text-[10px] font-bold text-coral">WHERE TO STAY</span>
+                  <span className="block text-[12.5px] font-bold text-ink">{stays.length} {tier ? `${TIER_LABEL[tier]} ` : ""}pick{stays.length === 1 ? "" : "s"} close to your plan</span>
+                </span>
+                <span aria-hidden className="text-muted transition-transform group-open:rotate-90">›</span>
+              </summary>
+              <ul className="mt-3 space-y-3">
+                {stays.map((h) => (
+                  <li key={h.ref} className="rounded-[12px] bg-surface px-3 py-2.5">
+                    <a href={mapsLink(h.lat, h.lng)} target="_blank" rel="noopener noreferrer" className="text-[13px] font-bold text-ink underline-offset-2 hover:underline">{h.name}</a>
+                    <p className="text-[11px] text-muted">
+                      {h.stars ? `${h.stars}★ ` : ""}{KIND_LABEL[h.kind] ?? "Stay"}, about {h.km} km from your stops, closest to day {h.nearDay}
+                    </p>
+                    <p className="mt-1 text-[12px] leading-snug text-body">{h.reason}</p>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-[10.5px] text-muted">Places from OpenStreetMap. Check prices and rooms before you book.</p>
+            </details>
+          )}
 
           {day === 1 && (trip.plan_style?.learned ?? []).length > 0 && (
             <div className="mt-3 flex items-start gap-3 rounded-[16px] border-l-4 border-coral bg-card p-4 shadow-card">
@@ -76,12 +107,25 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
                 <p className="mb-1 text-[10px] font-bold text-muted">{s.start_time?.slice(0, 5)}</p>
                 <div className="rounded-[14px] bg-card px-4 py-3 shadow-card">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-[13.5px] font-bold text-ink">{s.name}</p>
+                    <a href={mapsLink(s.lat, s.lng)} target="_blank" rel="noopener noreferrer" className="text-[13.5px] font-bold text-ink underline-offset-2 hover:underline">{s.name}</a>
                     {s.source === "user" && <span className="shrink-0 rounded-full bg-[#e8623f24] px-2 py-0.5 text-[9.5px] font-bold text-coral-dark">yours</span>}
                   </div>
                   <p className="text-[11px] text-muted">
                     {CATEGORY_LABEL[(s.category ?? "other") as Category]}, about {s.duration_min} min{s.reason ? `. ${s.reason}` : ""}
                   </p>
+                  {eats[s.id]?.length ? (
+                    <div className="mt-2 border-t border-line pt-2">
+                      <p className="text-[10px] font-bold text-muted">EAT NEARBY</p>
+                      <ul className="mt-1 space-y-1">
+                        {eats[s.id].map((e) => (
+                          <li key={e.name} className="text-[11.5px] leading-snug">
+                            <a href={mapsLink(e.lat, e.lng)} target="_blank" rel="noopener noreferrer" className="font-bold text-body underline-offset-2 hover:underline">{e.name}</a>
+                            <span className="text-muted">{e.cuisine ? `, ${e.cuisine}` : ""}, {e.walkMin} min walk</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
                 </div>
               </li>
             ))}
