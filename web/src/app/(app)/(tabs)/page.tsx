@@ -17,7 +17,7 @@ export default async function HomePage() {
   const memories = trips.reduce((n, t) => n + t.memories, 0);
   const pins = trips
     .filter((t) => t.center && t.trip.status !== "planned")
-    .map((t) => ({ id: t.trip.id, lat: t.center!.lat, lng: t.center!.lng, count: t.memories, label: t.trip.destination || t.trip.name }));
+    .map((t) => ({ id: t.trip.id, lat: t.center!.lat, lng: t.center!.lng, count: t.memories, label: (t.trip.destination || t.trip.name).split(",")[0].trim() })); // "Seoul", not "Seoul, South Korea": short labels don't cover each other
 
   return (
     <main className="relative min-h-dvh">

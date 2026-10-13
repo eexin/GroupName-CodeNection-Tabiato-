@@ -20,6 +20,7 @@ const OVERLAP = 28;
 export function MapSheet({ pins, dim, header, children }: { pins: Pin[]; dim?: boolean; header: React.ReactNode; children: React.ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
   const win = useRef<HTMLDivElement>(null);
+  const head = useRef<HTMLDivElement>(null);
   const [inset, setInset] = useState<{ top: number; bottom: number } | undefined>();
 
   useEffect(() => {
@@ -47,7 +48,8 @@ export function MapSheet({ pins, dim, header, children }: { pins: Pin[]; dim?: b
       window.clearTimeout(idle);
       // the map's canvas keeps its full size and is only cropped, so pins near the top and bottom
       // edges get hidden; once the scroll stops, frame them inside the strip that is still showing
-      idle = window.setTimeout(() => setInset({ top: crop, bottom: crop + OVERLAP }), 180);
+      // the header floats over the map too, so pins are kept below it (pins hang above their spot)
+      idle = window.setTimeout(() => setInset({ top: crop + (head.current?.offsetHeight ?? 0), bottom: crop + OVERLAP }), 180);
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(apply); };
     const measure = () => {
@@ -78,7 +80,7 @@ export function MapSheet({ pins, dim, header, children }: { pins: Pin[]; dim?: b
         <div className="absolute inset-x-0 h-[var(--map-full)] lg:h-full" style={{ top: "calc(-1 * var(--crop, 0px))" }}>
           <LinkedMap pins={pins} base="/trips" attribution={false} fitInset={inset} className={`absolute inset-0 ${dim ? "opacity-60" : ""}`} />
         </div>
-        <div className="absolute inset-x-0 top-0 z-10 lg:hidden">{header}</div>
+        <div ref={head} className="absolute inset-x-0 top-0 z-10 lg:hidden">{header}</div>
         {/* the OSM credit is a licence requirement, so it sits where the sheet never covers it */}
         <p className="absolute bottom-[calc(28px+6px)] right-2 z-10 rounded-full bg-white/80 px-2 py-0.5 text-[9px] text-body group-data-[collapsed=true]:bottom-1.5 lg:bottom-2">
           © <a href="https://openfreemap.org" target="_blank" rel="noreferrer" className="underline">OpenFreeMap</a>{" "}
