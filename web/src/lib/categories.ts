@@ -11,7 +11,7 @@ export const CATEGORY_LABEL: Record<Category, string> = {
 };
 
 const FOOD = ["restaurant", "cafe", "fast_food", "food_court", "bar", "pub", "ice_cream", "bakery", "marketplace", "biergarten"];
-const CULTURE = ["museum", "attraction", "artwork", "gallery", "theatre", "place_of_worship", "castle", "monument", "memorial", "ruins", "shrine", "temple", "arts_centre", "viewpoint", "zoo", "aquarium", "theme_park"];
+const CULTURE = ["museum", "attraction", "artwork", "gallery", "theatre", "place_of_worship", "religious", "church", "cathedral", "mosque", "castle", "monument", "memorial", "ruins", "shrine", "temple", "arts_centre", "viewpoint", "zoo", "aquarium", "theme_park"];
 const NATURE = ["park", "garden", "beach", "peak", "nature_reserve", "water", "wood", "cliff", "waterfall", "forest", "bay"];
 const SHOPPING = ["mall", "department_store", "supermarket", "clothes", "gift", "shop", "convenience"];
 const STAY = ["hotel", "hostel", "guest_house", "motel", "apartment", "camp_site"];

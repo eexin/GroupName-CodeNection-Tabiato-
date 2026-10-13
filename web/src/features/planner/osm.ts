@@ -42,7 +42,8 @@ export const POI_BUDGET = { render: 7_000, build: 16_000 } as const;
 const coolOff = new Map<string, number>();
 const COOL_OFF_MS = 5 * 60_000;
 
-export type SearchHit = { name: string; lat: number; lng: number; category: Category; ref: string; detail: string };
+/** `type` is the map's own tag value (e.g. "temple", "attraction"), so a vague one can be refined. */
+export type SearchHit = { name: string; lat: number; lng: number; category: Category; type?: string; ref: string; detail: string };
 
 export async function searchPlaces(q: string, near?: { lat: number; lng: number }): Promise<SearchHit[]> {
   const params = new URLSearchParams({ format: "jsonv2", q, limit: "6", addressdetails: "0" });
@@ -61,6 +62,7 @@ export async function searchPlaces(q: string, near?: { lat: number; lng: number 
       name: r.name || r.display_name.split(",")[0],
       lat: Number(r.lat), lng: Number(r.lon),
       category: categorise(r.category ?? r.class, r.type),
+      type: r.type,
       ref: `${r.osm_type ?? "x"}/${r.osm_id ?? r.display_name}`,
       detail: r.display_name.split(",").slice(1, 3).join(",").trim(),
     }));

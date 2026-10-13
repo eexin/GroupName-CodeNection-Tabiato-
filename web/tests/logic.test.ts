@@ -353,6 +353,12 @@ test("the map's category wins over Ato's; Ato's fills in only when the map has n
   assert.equal(toCandidate({ name: "X", kind: "food" }, hit("culture"), OSAKA)?.category, "culture");
   assert.equal(toCandidate({ name: "X", kind: "Shopping" }, hit("other"), OSAKA)?.category, "shopping");
   assert.equal(toCandidate({ name: "X", kind: "spaceship" }, hit("other"), OSAKA)?.category, "other");
+  // the map only says "attraction" (how OSM tags Shinsaibashi-suji): Ato's "shopping" is better
+  const arcade = [{ name: "Shinsaibashi-suji Shopping Arcade", lat: 34.6735, lng: 135.5014, category: "culture" as const, type: "attraction", ref: "way/7" }];
+  assert.equal(toCandidate({ name: "Shinsaibashi-suji", kind: "shopping" }, arcade, OSAKA)?.category, "shopping");
+  // a specific map tag (a temple) still beats Ato's guess
+  const temple = [{ name: "Shitennoji", lat: 34.6537, lng: 135.5164, category: "culture" as const, type: "temple", ref: "way/8" }];
+  assert.equal(toCandidate({ name: "Shitennoji", kind: "food" }, temple, OSAKA)?.category, "culture");
 });
 
 test("names to check skip the traveller's own places and duplicates", () => {
@@ -434,4 +440,9 @@ test("Ato's city suggestions are kept only if the map puts a city-sized place in
   assert.equal(keepCity({ lat: 43.43, lng: 142.95, kind: "region", km: 552, countryCode: "JP" }, japan), false); // Hokkaido: still too big
   assert.equal(keepCity(null, japan), false);
   assert.equal(boxFromNominatim(["1", "2"], 0), null);
+});
+
+test("a shrine mapped as religious land is culture, not other", () => {
+  assert.equal(categorise("landuse", "religious"), "culture"); // how OSM maps Fushimi Inari-taisha
+  assert.equal(categorise("building", "church"), "culture");
 });

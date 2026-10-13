@@ -791,7 +791,7 @@ data, push notifications, native apps.
 - **Security in the database:** row-level security on all 20 tables. Notes and individual
   expenses are never public, even on a public trip; view-only members cannot upload; the sample
   account cannot delete trips. Secret keys never reach the browser.
-- **Tests:** 43 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
+- **Tests:** 44 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
   AI itinerary checks and the rules planner, search parsing) and 12 smoke tests against the production build, run by
   CI on every push.
 - **Monitoring:** `/api/health` checks the database and AI path; GitHub Actions calls it every 30

@@ -44,6 +44,7 @@ Rules:
 - Make every day feel different. Do not put the same category three times in a row.
 - For each stop give "start" (HH:MM, 24-hour) and "minutes" (how long to stay, 30 to 180).
 - For each stop you chose from candidates, give "reason": one short sentence, at most 15 words, in Ato's voice, about why it suits this traveller.
+- Base each reason only on the place's name, category and the traveller. Never claim a dish, cuisine, price, award or opening hours the data does not show.
 - Give each day a short, fun "title" of at most 6 words.
 Return JSON only: {"days":[{"day":number,"title":string,"stops":[{"id":string,"start":"HH:MM","minutes":number,"reason":string}]}]}
 "id" is a must_visit id or a candidate ref.`;

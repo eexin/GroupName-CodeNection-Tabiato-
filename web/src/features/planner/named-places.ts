@@ -54,7 +54,10 @@ export function namesToCheck(places: Named[], skip: string[]): Named[] {
   return out.slice(0, NAMED_COUNT);
 }
 
-export type MapHit = { name: string; lat: number; lng: number; category: Category; ref: string };
+export type MapHit = { name: string; lat: number; lng: number; category: Category; type?: string; ref: string };
+
+/** Map tags that only say "something to see"; for these, Ato's kind (shopping street, market…) is more useful. */
+const VAGUE_TYPES = new Set(["attraction", "yes", "landmark", "information"]);
 
 /**
  * The map's answer for one name → a planner candidate, or null if the map found nothing near the
@@ -64,7 +67,9 @@ export function toCandidate(named: Named, hits: MapHit[], center: { lat: number;
   const hit = hits.find((h) => distanceM(center.lat, center.lng, h.lat, h.lng) / 1000 <= NAMED_MAX_KM);
   if (!hit) return null;
   const kind = KINDS.find((k) => k === named.kind?.toLowerCase());
-  // the map's category wins; Ato's guess only fills in when the map has none
-  const category: Category = hit.category !== "other" ? hit.category : (kind ?? "other");
+  // the map's category wins when it is specific (a temple, a park, a restaurant); Ato's kind fills
+  // in when the map has none or only says "attraction" — that is how a shopping street ends up "culture"
+  const vague = hit.category === "other" || VAGUE_TYPES.has(hit.type ?? "");
+  const category: Category = vague && kind ? kind : hit.category;
   return { ref: hit.ref, name: hit.name || named.name, lat: hit.lat, lng: hit.lng, category, notable: true };
 }
