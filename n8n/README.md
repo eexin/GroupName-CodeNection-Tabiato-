@@ -19,14 +19,23 @@ Tasks and models (edit them in the **Pick model for task** node — no app redep
 
 | task | used by | model |
 | --- | --- | --- |
-| memory_book | the memory book | llama-3.3-70b-versatile |
-| insight | travel insights line | llama-3.3-70b-versatile |
-| intel_notes | trip intel notes | llama-3.3-70b-versatile |
-| hazard_advice | travel alert suggestion | llama-3.3-70b-versatile |
-| rain_replan | rain replan card | llama-3.1-8b-instant |
-| plan_titles | itinerary day titles | llama-3.1-8b-instant |
+| memory_book | the memory book | openai/gpt-oss-120b |
+| plan_itinerary | the whole AI itinerary | openai/gpt-oss-120b |
+| insight | travel insights line | openai/gpt-oss-120b |
+| intel_notes | trip intel notes | openai/gpt-oss-120b |
+| hazard_advice | travel alert suggestion | openai/gpt-oss-120b |
+| rain_replan | rain replan card | openai/gpt-oss-20b |
+| plan_titles | day titles (rules planner only) | openai/gpt-oss-20b |
+| note_draft | Ato's draft note | openai/gpt-oss-20b |
+| search_summary | search summary | openai/gpt-oss-20b |
 
-Groq renames models from time to time — check console.groq.com/docs/models.
+The same node also adds Ato's voice to each task: a storybook voice for the memory book, a
+cheerful one for most tasks, and a calm one for safety (alerts, trip intel). Edit the `BOOK`,
+`CUTE` and `CALM` texts to change how Ato sounds, then clear old answers with
+`delete from llm_cache;` in the app's Supabase SQL editor.
+
+Groq renames models from time to time, and not every account gets every model (some new accounts
+have no Llama models) — check the model list in your Groq playground.
 
 ---
 

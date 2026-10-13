@@ -11,15 +11,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *   3. Groq directly            — fallback if n8n is asleep or down
  *   4. null                     — callers always have a template fallback
  *
- * The model only ever writes prose. Numbers, places and decisions are computed in code first,
- * and the output is validated with zod before anything is saved.
+ * The model writes prose, and in the planner it chooses among real places the code found for it.
+ * Numbers and facts are computed in code first, and every output is validated with zod (and, for
+ * the itinerary, checked against the real place list) before anything is saved.
  */
 
-export type AiTask = "memory_book" | "insight" | "plan_titles" | "rain_replan" | "hazard_advice" | "intel_notes" | "note_draft" | "search_summary";
+export type AiTask = "memory_book" | "insight" | "plan_titles" | "plan_itinerary" | "rain_replan" | "hazard_advice" | "intel_notes" | "note_draft" | "search_summary";
 
-const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+// gpt-oss is on every Groq account; some new accounts have no Llama models at all
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
-async function viaN8n(task: AiTask, system: string, user: string): Promise<unknown | null> {
+async function viaN8n(task: AiTask, system: string, user: string, timeoutMs: number): Promise<unknown | null> {
   const url = process.env.N8N_WEBHOOK_URL;
   const secret = process.env.N8N_SECRET;
   if (!url || !secret) return null;
@@ -28,7 +30,7 @@ async function viaN8n(task: AiTask, system: string, user: string): Promise<unkno
       method: "POST",
       headers: { "Content-Type": "application/json", "x-tabiato-secret": secret },
       body: JSON.stringify({ task, system, user }),
-      signal: AbortSignal.timeout(30_000), // a sleeping free-tier host may take a while to wake
+      signal: AbortSignal.timeout(timeoutMs), // a sleeping free-tier host may take a while to wake
       cache: "no-store",
     });
     if (!res.ok) return null;
@@ -39,7 +41,7 @@ async function viaN8n(task: AiTask, system: string, user: string): Promise<unkno
   }
 }
 
-async function viaGroq(system: string, user: string): Promise<unknown | null> {
+async function viaGroq(system: string, user: string, timeoutMs: number): Promise<unknown | null> {
   const key = process.env.GROQ_API_KEY;
   if (!key) return null;
   try {
@@ -50,7 +52,7 @@ async function viaGroq(system: string, user: string): Promise<unknown | null> {
         model: GROQ_MODEL, temperature: 0.6, response_format: { type: "json_object" },
         messages: [{ role: "system", content: system }, { role: "user", content: user }],
       }),
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(timeoutMs),
       cache: "no-store",
     });
     if (!res.ok) return null;
@@ -61,7 +63,9 @@ async function viaGroq(system: string, user: string): Promise<unknown | null> {
   }
 }
 
-export async function aiJSON<T>(task: AiTask, system: string, user: string, schema: z.ZodType<T>): Promise<T | null> {
+/** timeoutMs: how long to wait for each of n8n and Groq. Callers with a tight time budget lower it. */
+export async function aiJSON<T>(task: AiTask, system: string, user: string, schema: z.ZodType<T>, opts: { timeoutMs?: number } = {}): Promise<T | null> {
+  const timeoutMs = opts.timeoutMs ?? 30_000;
   const hash = createHash("sha256").update(`${task}\n${system}\n${user}`).digest("hex");
   const admin = createAdminClient();
 
@@ -71,7 +75,7 @@ export async function aiJSON<T>(task: AiTask, system: string, user: string, sche
     if (cached?.success) return cached.data;
   }
 
-  for (const attempt of [() => viaN8n(task, system, user), () => viaGroq(system, user)]) {
+  for (const attempt of [() => viaN8n(task, system, user, timeoutMs), () => viaGroq(system, user, timeoutMs)]) {
     const raw = await attempt();
     if (raw === null) continue;
     const parsed = schema.safeParse(raw);

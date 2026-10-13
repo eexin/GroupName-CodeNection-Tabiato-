@@ -78,12 +78,12 @@ export function learnFromHistory(input: {
 }
 
 export const STOPS_PER_DAY: Record<Pace, number> = { slow: 3, balanced: 4, packed: 6 };
-const DAY_START: Record<Pace, number> = { slow: 9 * 60 + 30, balanced: 9 * 60, packed: 8 * 60 };
-const DURATION: Record<Category, number> = { food: 60, culture: 90, nature: 90, shopping: 60, stay: 30, other: 60 };
+export const DAY_START: Record<Pace, number> = { slow: 9 * 60 + 30, balanced: 9 * 60, packed: 8 * 60 };
+export const DURATION: Record<Category, number> = { food: 60, culture: 90, nature: 90, shopping: 60, stay: 30, other: 60 };
 
-const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
-const toHHMM = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-const cat = (c: string | null | undefined): Category => ((c && c in CATEGORY_LABEL) ? c : "other") as Category;
+export const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + (m || 0); };
+export const toHHMM = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+export const cat = (c: string | null | undefined): Category => ((c && c in CATEGORY_LABEL) ? c : "other") as Category;
 
 /** Walking-ish transfer: 15 minutes plus 3 per kilometre, capped at an hour. */
 export const travelMinutes = (km: number) => Math.min(60, Math.round(15 + 3 * km));

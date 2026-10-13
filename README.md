@@ -711,12 +711,12 @@ each sits behind a provider interface so a paid upgrade is a config change, not 
 | Photo metadata | **exifr**, client-side | Reads GPS and timestamp in the browser before upload, so we never pay to process a photo we would reject. |
 | Place naming | **Nominatim** reverse geocoding, cached | Turns coordinates into a place name. Hard 1 req/sec policy, so we batch per upload session and cache aggressively; a repeat location costs zero requests. |
 | POI data | **Overpass API** over OpenStreetMap, cached to Postgres | Powers must-visit search and itinerary gap-filling. Queried once per city, then served from our own database. |
-| Itinerary ordering | **Our own scheduler** in TypeScript, unit-tested | Orders stops by distance, never drops or moves a place the user added (fixed day and time are honoured), and fills gaps with real OSM places weighted by what you rated highly before. No routing API means no rate limit to hit; every stop links out to Google Maps for directions. |
+| Itinerary | **Ato (LLM) plans, code checks** | Ato builds the whole day-by-day plan around your must-visit places: which real nearby places to add, the order, meal times, a reason for every pick and a title for every day. It may only choose from real OpenStreetMap places the code found, and code then enforces the rules — nothing invented, every place you added kept on its pinned day and time, no overlapping stops. If the AI is unavailable, a unit-tested rules planner builds the days instead. Every stop links out to Google Maps for directions. |
 | Backend | Next.js Route Handlers + Server Actions | One deployable. With four people and a month, a separate API service is overhead we cannot justify. |
 | Database | **Supabase Postgres** (free tier) | Row-level security is the reason. Shared trips mean one person's photos must be visible to trip members and nobody else — RLS enforces that at the database, not in application code. |
 | Auth | Supabase Auth | Email sign-up and a one-tap sample account for judges; Google sign-in and password reset by email are built in and switched on through configuration. All of it sits under the same RLS policies. |
 | Photo storage | Supabase Storage (1 GB free) | Client-side compression before upload; the demo dataset is capped deliberately. This is our tightest ceiling and we know it. |
-| LLM (text) | **Groq** free tier, open-weight models | Memory book, insights, day titles, rain and hazard suggestions, trip-intel notes, search summaries. Every number and observation is computed in code first; the model only writes prose from those facts and is validated against a schema. Output cached by prompt hash, so re-running the demo costs nothing and cannot be broken by a rate limit. |
+| LLM | **Groq** free tier, open-weight models (gpt-oss) | Memory book, the itinerary, insights, rain and hazard suggestions, trip-intel notes, search summaries. Every number and observation is computed in code first; the model writes from those facts (and, in the planner, chooses only among real places) and is validated against a schema. Output cached by prompt hash, so re-running the demo costs nothing and cannot be broken by a rate limit. |
 | AI orchestration | **n8n**, self-hosted free | Every AI call goes app → n8n → Groq, with the model chosen per task inside n8n, so it can be changed without redeploying. If n8n is asleep the app calls Groq directly; if that fails too it uses template text. The app never breaks on AI. |
 | Weather | **Open-Meteo** | Free, no key. Drives the replanning trigger. |
 | Hazard alerts | **GDACS** | Official disaster feed, free, no key. The source behind Travel Alert. |
@@ -791,8 +791,8 @@ data, push notifications, native apps.
 - **Security in the database:** row-level security on all 20 tables. Notes and individual
   expenses are never public, even on a public trip; view-only members cannot upload; the sample
   account cannot delete trips. Secret keys never reach the browser.
-- **Tests:** 30 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
-  itinerary scheduler, search parsing) and 12 smoke tests against the production build, run by
+- **Tests:** 35 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
+  AI itinerary checks and the rules planner, search parsing) and 12 smoke tests against the production build, run by
   CI on every push.
 - **Monitoring:** `/api/health` checks the database and AI path; GitHub Actions calls it every 30
   minutes. Vercel Analytics and Speed Insights are built in.

@@ -269,3 +269,63 @@ test("must-do clash: two people pin different places to the same evening", () =>
   assert.ok(clash && /Dotonbori/.test(clash.detail) && /day 2/.test(clash.detail));
   assert.equal(c.filter((x) => x.title === "Must-do clash").length, 1);
 });
+
+import { aiPlanPrompt, aiPlanSchema, applyAiPlan, shortlist } from "../src/features/planner/ai-plan";
+
+test("AI plan: invented places are dropped, real picks keep Ato's reason and order", () => {
+  const ai = aiPlanSchema.parse({ days: [{ day: 1, title: "Temples and ramen", stops: [
+    { id: "m1", start: "09:00", minutes: 90, reason: "A calm morning temple — you love culture." },
+    { id: "made-up-place", start: "11:00", minutes: 60, reason: "Does not exist" },
+    { id: "r1", start: "12:00", minutes: 60, reason: "Lunch right next door." },
+  ] }] });
+  const out = applyAiPlan(ai, { userStops: [], candidates: [C("m1", 34.68, 135.52, "culture"), C("r1", 34.681, 135.521, "food")], days: 1, pace: "balanced" })!;
+  assert.deepEqual(out.plan.map((s) => s.ref), ["m1", "r1"]);
+  assert.equal(out.plan[0].reason, "A calm morning temple — you love culture.");
+  assert.equal(out.plan[1].start, "12:00");
+  assert.deepEqual(out.titles, [{ day: 1, title: "Temples and ramen" }]);
+});
+
+test("AI plan: a must-visit the model forgot or moved is put back on its pinned day and time", () => {
+  const ai = aiPlanSchema.parse({ days: [
+    { day: 1, title: "", stops: [{ id: "tl", start: "08:00" }, { id: "m1", start: "10:00" }] },
+    { day: 2, title: "", stops: [{ id: "p1", start: "09:00" }] },
+  ] });
+  const out = applyAiPlan(ai, {
+    userStops: [U("tl", 35.64, 139.78, { fixed_day: 2, fixed_time: "14:00" }), U("x", 35.71, 139.79)],
+    candidates: [C("m1", 35.70, 139.77, "culture"), C("p1", 35.65, 139.77, "nature")], days: 2, pace: "balanced",
+  })!;
+  const tl = out.plan.find((s) => s.id === "tl")!;
+  assert.equal(tl.day, 2);
+  assert.ok(tl.start >= "14:00", tl.start);
+  assert.ok(out.plan.some((s) => s.id === "x"), "forgotten must-visit is kept");
+});
+
+test("AI plan: times never overlap and picks are capped by the pace", () => {
+  const cands = ["a", "b", "c", "d", "e", "f", "g", "h"].map((r, i) => C(r, 34.68 + i * 0.001, 135.52, "culture"));
+  const ai = aiPlanSchema.parse({ days: [{ day: 1, title: "", stops: cands.map((c) => ({ id: c.ref, start: "10:00", minutes: 120 })) }] });
+  const out = applyAiPlan(ai, { userStops: [], candidates: cands, days: 1, pace: "slow" })!;
+  assert.equal(out.plan.length, 3);
+  for (let i = 1; i < out.plan.length; i++) {
+    const prevEnd = Number(out.plan[i - 1].start.slice(0, 2)) * 60 + Number(out.plan[i - 1].start.slice(3)) + out.plan[i - 1].duration;
+    const start = Number(out.plan[i].start.slice(0, 2)) * 60 + Number(out.plan[i].start.slice(3));
+    assert.ok(start >= prevEnd, `${out.plan[i].start} starts before the previous stop ends`);
+  }
+});
+
+test("AI plan: an answer with no usable places is rejected so the rules planner takes over", () => {
+  const ai = aiPlanSchema.parse({ days: [{ day: 1, title: "x", stops: [{ id: "nowhere" }] }] });
+  assert.equal(applyAiPlan(ai, { userStops: [], candidates: [C("m1", 1, 1, "culture")], days: 1, pace: "balanced" }), null);
+});
+
+test("AI plan prompt: only real shortlisted places, avoided categories ranked last", () => {
+  const list = shortlist({
+    candidates: [C("bar", 34.68, 135.52, "food"), C("museum", 34.69, 135.53, "culture", true), C("u", 34.68, 135.52, "culture")],
+    userStops: [U("u", 34.68, 135.52)], interests: ["culture"], center: { lat: 34.68, lng: 135.52 },
+    learned: { boost: [], avoid: ["food"], ratings: {}, maxPerDay: null, notes: [] },
+  });
+  assert.deepEqual(list.map((c) => c.ref), ["museum", "bar"]);
+  const prompt = JSON.parse(aiPlanPrompt({ destination: "Osaka", startDate: "2026-11-02", days: 2, pace: "balanced", interests: ["culture"], budget: null, userStops: [U("u", 34.68, 135.52)], shortlist: list }));
+  assert.equal(prompt.trip.dates[0].weekday, "Monday");
+  assert.deepEqual(prompt.candidates.map((c: { ref: string }) => c.ref), ["museum", "bar"]);
+  assert.equal(prompt.must_visit[0].id, "u");
+});

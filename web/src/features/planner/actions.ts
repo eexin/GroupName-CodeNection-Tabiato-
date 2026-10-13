@@ -7,7 +7,8 @@ import { aiJSON } from "@/lib/ai";
 import { requireUser } from "@/features/auth/guards";
 import { categorise } from "@/lib/categories";
 import { geocodeDestination, nearbyPois, POI_BUDGET } from "@/features/planner/osm";
-import { buildItinerary, type Pace, type UserStop } from "@/features/planner/itinerary";
+import { buildItinerary, type Pace, type Scheduled, type UserStop } from "@/features/planner/itinerary";
+import { AI_PLAN_SYSTEM, aiPlanPrompt, aiPlanSchema, applyAiPlan, perDayRange, shortlist } from "@/features/planner/ai-plan";
 import { learnForUser } from "@/features/planner/learn";
 import type { ActionResult } from "@/lib/types";
 
@@ -123,7 +124,11 @@ export async function pinStop(tripId: string, stopId: string, form: FormData) {
 
 const dayTitles = z.object({ days: z.array(z.object({ day: z.number(), title: z.string().max(60) })).max(14) });
 
-/** 31b → 31. Builds the itinerary: code decides places and times; the model may only title the days. */
+/**
+ * 31b → 31. Builds the itinerary. Ato (the model) plans the days from the traveller's must-visit
+ * places and real nearby places; code checks the answer (real places only, pins kept, no overlaps).
+ * If the model is unavailable or its answer is unusable, the code planner builds the days instead.
+ */
 export async function buildPlan(tripId: string) {
   const { supabase, user } = await requireUser();
   const [{ data: trip }, { data: stops }] = await Promise.all([
@@ -142,13 +147,23 @@ export async function buildPlan(tripId: string) {
     learnForUser(supabase, user.id), // the memory → planning loop
   ]);
 
-  const plan = buildItinerary({
-    userStops, candidates, days,
-    pace: style.pace ?? "balanced",
-    interests: style.interests ?? [],
-    center: { lat: trip.dest_lat, lng: trip.dest_lng },
-    learned,
-  });
+  const pace = style.pace ?? "balanced";
+  const interests = style.interests ?? [];
+  const center = { lat: trip.dest_lat, lng: trip.dest_lng };
+
+  // Ato plans the whole trip from real places only. 15 s each for n8n and Groq keeps the build
+  // inside the page's 60 s limit even when OpenStreetMap took its full 25 s
+  const options = shortlist({ candidates, userStops, interests, center, learned });
+  const range = perDayRange(pace, learned);
+  const ai = await aiJSON(
+    "plan_itinerary",
+    AI_PLAN_SYSTEM(range.min, range.max, pace === "packed" ? "08:00" : pace === "slow" ? "09:30" : "09:00"),
+    aiPlanPrompt({ destination: trip.destination ?? trip.name, startDate: trip.start_date, days, pace, interests, budget: trip.budget ?? null, userStops, shortlist: options, learned }),
+    aiPlanSchema,
+    { timeoutMs: 15_000 },
+  );
+  const fromAi = ai ? applyAiPlan(ai, { userStops, candidates: options, days, pace, learned }) : null;
+  const plan: Scheduled[] = fromAi?.plan ?? buildItinerary({ userStops, candidates, days, pace, interests, center, learned });
 
   // replace the previous fill, keep every user stop
   await supabase.from("plan_stops").delete().eq("trip_id", tripId).eq("source", "ato");
@@ -166,15 +181,19 @@ export async function buildPlan(tripId: string) {
     })));
   }
 
-  // optional day titles from the model, grounded in the stops it was given
-  const titles = await aiJSON(
-    "plan_titles",
-    `You are Ato, a warm goldfish trip planner. Give each day a short title (max 6 words) based ONLY on its stops. Return JSON {"days":[{"day":number,"title":string}]}.`,
-    JSON.stringify(Array.from({ length: days }, (_, i) => ({ day: i + 1, stops: plan.filter((p) => p.day === i + 1).map((p) => p.name) }))),
-    dayTitles,
-  );
+  // day titles come with Ato's plan; the code plan asks the model for titles separately
+  // (skipped when the model did not answer at all — it would only time out again)
+  const titles = fromAi?.titles.length
+    ? { days: fromAi.titles }
+    : ai === null ? null : await aiJSON(
+      "plan_titles",
+      `You are Ato, a warm goldfish trip planner. Give each day a short title (max 6 words) based ONLY on its stops. Return JSON {"days":[{"day":number,"title":string}]}.`,
+      JSON.stringify(Array.from({ length: days }, (_, i) => ({ day: i + 1, stops: plan.filter((p) => p.day === i + 1).map((p) => p.name) }))),
+      dayTitles,
+      { timeoutMs: 10_000 },
+    );
   await supabase.from("trips")
-    .update({ plan_style: { ...style, day_titles: titles?.days ?? [], learned: learned.notes, built_at: new Date().toISOString() } })
+    .update({ plan_style: { ...style, day_titles: titles?.days ?? [], learned: learned.notes, planned_by: fromAi ? "ato" : "rules", built_at: new Date().toISOString() } })
     .eq("id", tripId);
 
   revalidatePath(`/plan/${tripId}`);

@@ -6,7 +6,7 @@ import { buildPlan } from "@/features/planner/actions";
 import Link from "next/link";
 import { Ato } from "@/components/ato";
 
-const STEPS = ["Locking in your must-visit places", "Looking up real places nearby", "Reading what you rated on past trips", "Balancing walking distance", "Fitting your pace", "Adding food stops nearby"];
+const STEPS = ["Locking in your must-visit places", "Looking up real places nearby", "Reading what you rated on past trips", "Ato is planning each day", "Fitting meals and walking time", "Checking every place is real"];
 
 /** 31b Itinerary — generating. */
 export function Building({ tripId, name, days }: { tripId: string; name: string; days: number }) {
@@ -18,7 +18,7 @@ export function Building({ tripId, name, days }: { tripId: string; name: string;
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    const tick = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 1400);
+    const tick = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 2500);
     buildPlan(tripId).then((r) => {
       clearInterval(tick);
       if (r && "error" in r && r.error) setError(r.error);
