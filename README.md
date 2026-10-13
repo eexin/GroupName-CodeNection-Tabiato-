@@ -720,7 +720,7 @@ each sits behind a provider interface so a paid upgrade is a config change, not 
 | AI orchestration | **n8n**, self-hosted free | Every AI call goes app → n8n → Groq, with the model chosen per task inside n8n, so it can be changed without redeploying. If n8n is asleep the app calls Groq directly; if that fails too it uses template text. The app never breaks on AI. |
 | Weather | **Open-Meteo** | Free, no key. Drives the replanning trigger. |
 | Hazard alerts | **GDACS** | Official disaster feed, free, no key. The source behind Travel Alert. |
-| Trip intel | **UK FCDO travel advice** (GOV.UK Content API) + **NewsData.io** | Official entry rules and safety advice per country, plus recent travel news for the destination. |
+| Trip intel | **UK FCDO travel advice** (GOV.UK Content API) + **NewsData.io** | Official entry rules and safety advice per country, plus recent travel news for the destination. Press releases and repeats are dropped in code, and Ato shows only the stories that could change this trip (strikes, weather, entry rules, tourist taxes), each with one line on why. |
 | Currency | **Frankfurter** (ECB rates) | Normalises expenses when a trip crosses currencies. |
 | Hosting / CI | Vercel Hobby + GitHub Actions | Zero-config deploys and a preview URL per pull request. Every push runs lint, typecheck, unit tests, a production build and smoke tests; an uptime check runs every 30 minutes and the sample account is reset nightly. |
 
@@ -791,7 +791,7 @@ data, push notifications, native apps.
 - **Security in the database:** row-level security on all 20 tables. Notes and individual
   expenses are never public, even on a public trip; view-only members cannot upload; the sample
   account cannot delete trips. Secret keys never reach the browser.
-- **Tests:** 44 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
+- **Tests:** 46 unit tests on the pure logic (place clustering, the 'Ato noticed' facts, the
   AI itinerary checks and the rules planner, search parsing) and 12 smoke tests against the production build, run by
   CI on every push.
 - **Monitoring:** `/api/health` checks the database and AI path; GitHub Actions calls it every 30

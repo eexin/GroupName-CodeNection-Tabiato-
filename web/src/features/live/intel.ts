@@ -1,4 +1,5 @@
 import "server-only";
+import { cleanNews } from "@/features/live/news-filter";
 
 /**
  * Trip intel from two sources:
@@ -58,19 +59,33 @@ export async function travelAdvice(countryName: string): Promise<Advice | null> 
   }
 }
 
-export async function travelNews(countryCode: string): Promise<Headline[]> {
+/**
+ * Recent news that could matter to a traveller. Two searches, both cached for 3 hours (so at most
+ * 16 credits a day per country, well inside 200): NewsData's own tourism section for the country,
+ * and headlines that name the country together with a travel word. Press releases and repeats are
+ * removed here; the intel page then has Ato keep only what could change the trip.
+ */
+export async function travelNews(countryCode: string, countryName: string): Promise<Headline[]> {
   const key = process.env.NEWSDATA_API_KEY;
   if (!key || !countryCode) return [];
-  const q = encodeURIComponent("tourism OR travel OR visa OR airport OR tourists");
-  try {
-    const res = await fetch(`https://newsdata.io/api/1/latest?apikey=${key}&country=${countryCode.toLowerCase()}&language=en&q=${q}&size=6`,
-      { next: { revalidate: 10800 } }); // 3 h cache keeps us far inside 200 credits a day
-    if (!res.ok) return [];
-    const j = await res.json();
-    return (j.results ?? []).slice(0, 5).map((r: { title: string; link: string; source_name?: string; source_id?: string; pubDate?: string }) => ({
-      title: r.title, link: r.link, source: r.source_name ?? r.source_id ?? "", published: r.pubDate ?? null,
-    }));
-  } catch {
-    return [];
-  }
+  const base = `https://newsdata.io/api/1/latest?apikey=${key}&country=${countryCode.toLowerCase()}&language=en&size=10`;
+  // kept short: the free plan limits how long a search can be
+  const words = "(travel OR tourism OR tourists OR visa OR airport OR flights)";
+  const urls = [
+    `${base}&category=tourism`,
+    `${base}&q=${encodeURIComponent(`"${countryName}" AND ${words}`)}`,
+  ];
+  const lists = await Promise.all(urls.map(async (url) => {
+    try {
+      const res = await fetch(url, { next: { revalidate: 10800 } }); // 3 h cache
+      if (!res.ok) return [];
+      const j = await res.json();
+      return (j.results ?? []).map((r: { title: string; link: string; source_name?: string; source_id?: string; pubDate?: string }) => ({
+        title: r.title, link: r.link, source: r.source_name ?? r.source_id ?? "", published: r.pubDate ?? null,
+      })) as Headline[];
+    } catch {
+      return [];
+    }
+  }));
+  return cleanNews(lists.flat());
 }

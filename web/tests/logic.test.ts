@@ -446,3 +446,25 @@ test("a shrine mapped as religious land is culture, not other", () => {
   assert.equal(categorise("landuse", "religious"), "culture"); // how OSM maps Fushimi Inari-taisha
   assert.equal(categorise("building", "church"), "culture");
 });
+
+import { cleanNews, looksRelevant } from "../src/features/live/news-filter";
+
+test("trip intel news drops press releases and repeats, newest first", () => {
+  const h = (title: string, source: string, published: string, link = `https://x/${title}`) => ({ title, source, published, link });
+  const out = cleanNews([
+    h("Miracle Surrogacy Celebrates Growing Families", "Ein Presswire", "2026-10-12"),
+    h("Japan raises departure tax for tourists", "Kyodo", "2026-10-11"),
+    h("Japan Raises Departure Tax for Tourists!", "Japan Times", "2026-10-12"), // same story
+    h("Typhoon disrupts flights in Osaka", "NHK", "2026-10-12"),
+  ]);
+  assert.deepEqual(out.map((n) => n.source), ["Japan Times", "NHK"]);
+});
+
+test("without Ato, a headline must name the place and be about travel", () => {
+  const places = ["Japan", "Osaka", "Japan"];
+  assert.equal(looksRelevant("Typhoon disrupts flights in Osaka", places), true);
+  assert.equal(looksRelevant("Japan to raise tourist tax next year", places), true);
+  assert.equal(looksRelevant("Oil rises as Saudi Arabia vows response to attacks", places), false); // no place
+  assert.equal(looksRelevant("Japan's central bank holds rates", places), false);                  // not travel
+});
+

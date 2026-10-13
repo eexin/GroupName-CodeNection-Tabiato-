@@ -5,6 +5,7 @@ import { AtoNote, BackHeader, Empty } from "@/components/ui";
 import { aiJSON } from "@/lib/ai";
 import { requireUser } from "@/features/auth/guards";
 import { travelAdvice, travelNews } from "@/features/live/intel";
+import { looksRelevant } from "@/features/live/news-filter";
 import { money, myr } from "@/lib/currency";
 
 export const maxDuration = 60;
@@ -37,7 +38,7 @@ export default async function IntelPage({ params, searchParams }: { params: Prom
   }
   const country = countryName(trip.country_code);
   const [advice, news, { data: ex }] = await Promise.all([
-    travelAdvice(country), travelNews(trip.country_code),
+    travelAdvice(country), travelNews(trip.country_code, country),
     supabase.from("expenses").select("amount, currency, amount_myr").eq("trip_id", id),
   ]);
   const spent = Math.round((ex ?? []).reduce((s, e) => s + myr(e), 0));
@@ -45,7 +46,9 @@ export default async function IntelPage({ params, searchParams }: { params: Prom
   const notes = (advice || news.length)
     ? await aiJSON(
         "intel_notes",
-        `You are Ato, a helpful goldfish travel companion. Using ONLY the facts, write "advice_note": one sentence (under 30 words) on what in the official advice matters most for this trip, and for each news item a "why" (under 18 words) tying it to the trip, or "" if it does not matter. Never invent rules or dates. Return JSON {"advice_note": string, "news": [{"i": number, "why": string}]}.`,
+        `You are Ato, a helpful goldfish travel companion. Using ONLY the facts, write "advice_note": one sentence (under 30 words) on what in the official advice matters most for this trip.
+Then judge every news item strictly. Keep it only if it could change THIS trip: entry or visa rules, strikes or transport disruption, airport or flight problems, weather or natural disasters, safety at the destination, tourist taxes or prices, or events and closures at the destination. For a kept item write "why" (under 18 words) tying it to the trip. For anything else — general politics, business, markets, wars far away, adverts, lifestyle — give "why": "". When unsure, give "".
+Never invent rules or dates. Return JSON {"advice_note": string, "news": [{"i": number, "why": string}]}.`,
         JSON.stringify({
           trip: { destination: trip.destination ?? country, start: trip.start_date, end: trip.end_date, status: trip.status, spent_so_far_rm: spent || null },
           advice: advice ? { latest_change: advice.change, sections: advice.sections.map((s) => ({ title: s.title, text: s.text.slice(0, 400) })) } : null,
@@ -54,9 +57,13 @@ export default async function IntelPage({ params, searchParams }: { params: Prom
         z.object({ advice_note: z.string().max(260), news: z.array(z.object({ i: z.number(), why: z.string().max(160) })).max(10) }),
       )
     : null;
-  const why = new Map((notes?.news ?? []).map((n) => [n.i, n.why]));
+  const why = new Map((notes?.news ?? []).map((n) => [n.i, n.why.trim()]));
+  // Ato keeps the news that could change this trip; without Ato, code keeps headlines that name
+  // the place and are about travel. Either way, unrelated world news never shows.
+  const places = [country, ...(trip.destination ?? "").split(",").map((p: string) => p.trim())];
+  const relevant = (n: { title: string }, i: number) => (notes ? Boolean(why.get(i)) : looksRelevant(n.title, places));
   const showSection = (title: string) => tab === "all" || (tab === "entry" && /entry/i.test(title)) || (tab === "money" && /money|insurance/i.test(title)) || (tab === "transit" && /safety|transport/i.test(title));
-  const shownNews = news.map((n, i) => ({ n, i })).filter(({ n }) => tab === "all" || TOPIC[tab].test(n.title));
+  const shownNews = news.map((n, i) => ({ n, i })).filter(({ n, i }) => relevant(n, i) && (tab === "all" || TOPIC[tab].test(n.title)));
   const finished = trip.status === "finished";
 
   return (
@@ -114,7 +121,9 @@ export default async function IntelPage({ params, searchParams }: { params: Prom
                 </li>
               ))}
             </ul>
-          ) : <p className="text-[12px] text-muted">No recent travel news for {country}.</p>}
+          ) : <p className="text-[12px] text-muted">{news.length
+              ? `Nothing in the news right now that changes your trip to ${country}. I checked ${news.length} recent ${news.length === 1 ? "story" : "stories"}.`
+              : `No recent travel news for ${country}.`}</p>}
           <p className="mt-3 text-[10px] text-muted">News via NewsData.io, delayed up to 12 hours on the free plan. Intel stops when your trip ends.</p>
         </section>
       </div>
