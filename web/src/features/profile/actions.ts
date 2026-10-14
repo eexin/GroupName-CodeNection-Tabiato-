@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/features/auth/guards";
+import { safeNext } from "@/lib/safe-next";
 
 export type ProfileState = { error?: string };
 
@@ -33,5 +34,6 @@ export async function saveProfile(_: ProfileState, form: FormData): Promise<Prof
     .eq("id", user.id);
   if (error?.code === "23505") return { error: `@${username} is taken. Try another.` };
   if (error) return { error: "Couldn't save your profile. Try again." };
-  redirect("/");
+  // back to where sign-up started (an invite link, say), else home
+  redirect(safeNext(String(form.get("next") ?? "")));
 }

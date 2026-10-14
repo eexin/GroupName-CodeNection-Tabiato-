@@ -74,7 +74,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
                     <p className="text-[11px] text-muted">
                       {h.stars ? `${h.stars}★ ` : ""}{KIND_LABEL[h.kind] ?? "Stay"}, about {h.km} km from your stops, closest to day {h.nearDay}
                     </p>
-                    <p className="mt-1 text-[12px] leading-snug text-body">{h.reason}</p>
+                    {h.reason && <p className="mt-1 text-[12px] leading-snug text-body">{h.reason}</p>}
                   </li>
                 ))}
               </ul>

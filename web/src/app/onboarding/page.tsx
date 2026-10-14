@@ -5,9 +5,11 @@ import { requireUser } from "@/features/auth/guards";
 import { BackHeader } from "@/components/ui";
 import type { Profile } from "@/lib/types";
 import { OnboardingForm } from "@/app/onboarding/form";
+import { nextQuery, safeNext } from "@/lib/safe-next";
 
 /** 04 Profile setup. Also reachable later from Profile → Edit travel profile. */
-export default async function OnboardingPage() {
+export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const next = safeNext((await searchParams).next);
   const { supabase, user } = await requireUser();
   const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
   const profile = data as Profile | null;
@@ -17,11 +19,11 @@ export default async function OnboardingPage() {
       <div className="px-6">
         <div className="mb-5 flex flex-col items-center gap-3">
           <ProfilePicture src={avatarFor(user.id, profile?.avatar_url)} size={84} />
-          <AvatarActions userId={user.id} next="/onboarding" tone="light"
+          <AvatarActions userId={user.id} next={`/onboarding${nextQuery(next)}`} tone="light"
             showing={profile?.avatar_url && !lookFromUrl(profile.avatar_url) ? "photo" : "character"}
             hasPhoto={Boolean(profile?.settings?.photo_url || (profile?.avatar_url && !lookFromUrl(profile.avatar_url)))} />
         </div>
-        <OnboardingForm name={profile?.display_name ?? ""} username={profile?.username ?? ""} style={profile?.travel_style ?? {}} />
+        <OnboardingForm name={profile?.display_name ?? ""} username={profile?.username ?? ""} style={profile?.travel_style ?? {}} next={next} />
       </div>
     </main>
   );

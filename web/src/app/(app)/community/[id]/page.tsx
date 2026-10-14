@@ -9,7 +9,7 @@ import { sharedSpend } from "@/features/community/data";
 import { getTrip } from "@/features/trips/data";
 import { CATEGORY_LABEL, type Category } from "@/lib/categories";
 import { money, myr } from "@/lib/currency";
-import { person } from "@/lib/people";
+import { person, shortName } from "@/lib/people";
 
 const COLORS = ["#b8402a", "#0e4c55", "#86570f", "#5c7fa8", "#536b68", "#7a6ba8"];
 const days = (s: string | null, e: string | null) => (s && e ? Math.round((Date.parse(e) - Date.parse(s)) / 86400000) + 1 : 1);
@@ -139,7 +139,7 @@ export default async function PublicTripPage({ params }: { params: Promise<{ id:
           <button aria-pressed={Boolean(mySave)} className="min-h-[44px] px-3 text-[13px] font-bold text-deep">{mySave ? "Saved" : "Save"}</button>
         </form>
         {user.id !== authorId && (
-          <Link href={`/messages/${authorId}`} className="ml-auto flex min-h-[44px] items-center rounded-full bg-deep px-5 text-[13px] font-bold text-white">Message {a.name.split(" ")[0]}</Link>
+          <Link href={`/messages/${authorId}`} className="ml-auto flex min-h-[44px] items-center rounded-full bg-deep px-5 text-[13px] font-bold text-white">Message {shortName(a.name)}</Link>
         )}
       </div>
     </main>

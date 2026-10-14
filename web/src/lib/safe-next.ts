@@ -9,3 +9,9 @@ export function safeNext(next: string | null | undefined): string {
   if (!/^\/[\w\-/?=&%.~]*$/.test(n)) return "/";
   return n;
 }
+
+/** "?next=…" to carry a destination through sign-up, or "" when there is nowhere special to go. */
+export function nextQuery(next: string | null | undefined): string {
+  const n = safeNext(next);
+  return n === "/" ? "" : `?next=${encodeURIComponent(n)}`;
+}

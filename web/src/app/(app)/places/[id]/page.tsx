@@ -6,6 +6,7 @@ import { getPlace } from "@/features/trips/data";
 import { formatDay, formatTime } from "@/lib/time";
 import { currencyForCountry, money, myr } from "@/lib/currency";
 import { CommentForm, DeleteExpense, ExpenseForm, NoteEditor, PlaceName, Photos, RatingStars } from "@/app/(app)/places/[id]/islands";
+import { shortName } from "@/lib/people";
 
 function Label({ children }: { children: React.ReactNode }) {
   return <h2 className="mb-2 mt-6 text-[11px] font-bold text-ink">{children}</h2>;
@@ -33,7 +34,7 @@ export default async function PlacePage({ params }: { params: Promise<{ id: stri
         <div className="min-w-0 flex-1 pt-1">
           <PlaceName placeId={place.id} name={place.name} editable={d.isMember} />
           <p className="text-[11.5px] text-muted">{d.photos.length} photos, {when}</p>
-          {d.with.length > 0 && <p className="mt-0.5 text-[11.5px] text-body">With {d.with.map((p) => p.name.split(" ")[0]).join(", ")}</p>}
+          {d.with.length > 0 && <p className="mt-0.5 text-[11.5px] text-body">With {d.with.map((p) => shortName(p.name)).join(", ")}</p>}
         </div>
       </div>
 

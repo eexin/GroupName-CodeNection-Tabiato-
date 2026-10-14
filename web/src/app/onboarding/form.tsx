@@ -8,10 +8,11 @@ import { Field } from "@/components/ui";
 import { FormMessage, Submit } from "@/components/submit";
 import type { TravelStyle } from "@/lib/types";
 
-export function OnboardingForm({ name, username, style }: { name: string; username: string; style: TravelStyle }) {
+export function OnboardingForm({ name, username, style, next = "/" }: { name: string; username: string; style: TravelStyle; next?: string }) {
   const [state, action] = useActionState<ProfileState, FormData>(saveProfile, {});
   return (
     <form action={action} className="space-y-5">
+      <input type="hidden" name="next" value={next} />
       <Field label="Display name" name="name" defaultValue={name} maxLength={40} required />
       <Field label="Username — friends find you with @username" name="username" defaultValue={username} maxLength={24} required
         pattern="[a-z0-9_]{3,24}" autoCapitalize="none" autoCorrect="off" />

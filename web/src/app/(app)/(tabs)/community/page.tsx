@@ -8,6 +8,7 @@ import { getActivity, getCommunity, type Filter } from "@/features/community/dat
 import { trending } from "@/features/community/trending";
 import { money } from "@/lib/currency";
 import { timeAgo } from "@/lib/time";
+import { shortName } from "@/lib/people";
 
 const Heart = ({ on }: { on: boolean }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden><path d="M12 20s-7-4.4-9.2-8.6C1.2 8.2 3 4.5 6.6 4.5c2.2 0 3.6 1.3 4.4 2.6.8-1.3 2.2-2.6 4.4-2.6 3.6 0 5.4 3.7 3.8 6.9C19 15.6 12 20 12 20Z" fill={on ? "#b8402a" : "none"} stroke={on ? "#b8402a" : "#536b68"} strokeWidth={1.8} /></svg>
@@ -79,7 +80,7 @@ export default async function CommunityPage({ searchParams }: { searchParams: Pr
               <li key={i}>
                 <Link href={a.href} className="flex min-h-[48px] items-center gap-3 py-2">
                   <Avatar p={a.who} size={30} />
-                  <span className="min-w-0 flex-1 text-[12px] leading-snug text-body"><strong className="text-ink">{a.who.name.split(" ")[0]}</strong> {a.text}</span>
+                  <span className="min-w-0 flex-1 text-[12px] leading-snug text-body"><strong className="text-ink">{shortName(a.who.name)}</strong> {a.text}</span>
                   <span className="shrink-0 text-[10.5px] text-muted">{timeAgo(a.at)}</span>
                 </Link>
               </li>

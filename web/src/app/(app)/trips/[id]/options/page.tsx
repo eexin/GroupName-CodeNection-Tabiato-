@@ -4,6 +4,7 @@ import { deleteTrip } from "@/features/trips/actions";
 import { BackHeader } from "@/components/ui";
 import { DemoLocked } from "@/components/demo-notice";
 import { requireUser } from "@/features/auth/guards";
+import { shortName } from "@/lib/people";
 
 const Chevron = () => (
   <svg width="8" height="14" viewBox="0 0 8 14" aria-hidden><path d="M1 1 7 7 1 13" fill="none" stroke="#B9CFCC" strokeWidth={1.8} strokeLinecap="round" /></svg>
@@ -25,7 +26,7 @@ export default async function OptionsPage({ params, searchParams }: { params: Pr
 
   const { data: others } = await supabase.from("trip_members").select("user_id").eq("trip_id", id).eq("status", "joined").neq("user_id", user.id);
   const { data: names } = others?.length ? await supabase.from("profiles").select("display_name").in("id", others.map((o) => o.user_id)) : { data: [] as { display_name: string }[] };
-  const firsts = (names ?? []).map((n) => n.display_name.split(" ")[0]);
+  const firsts = (names ?? []).map((n) => shortName(n.display_name));
   const lose = firsts.length ? `${firsts.length > 1 ? `${firsts.slice(0, -1).join(", ")} and ${firsts.at(-1)}` : firsts[0]} lose access too` : null;
 
   if (confirm === "delete" && owner) {

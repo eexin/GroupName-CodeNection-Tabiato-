@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { BackHeader } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
-import { person } from "@/lib/people";
+import { person, shortName } from "@/lib/people";
 import { ThreadLive } from "./live";
 
 export default async function ThreadPage({ params }: { params: Promise<{ userId: string }> }) {
@@ -30,7 +30,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ userId:
             </li>
           );
         })}
-        {!msgs?.length && <li className="pt-10 text-center text-[12.5px] text-muted">Say hello to {p.name.split(" ")[0]}.</li>}
+        {!msgs?.length && <li className="pt-10 text-center text-[12.5px] text-muted">Say hello to {shortName(p.name)}.</li>}
       </ol>
       <ThreadLive other={userId} />
     </main>

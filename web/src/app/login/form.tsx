@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { nextQuery } from "@/lib/safe-next";
 import { useActionState } from "react";
 import { signIn, signInDemo, type AuthState } from "@/features/auth/actions";
 import { Ato } from "@/components/ato";
@@ -49,7 +50,7 @@ export function LoginForm({ next, demo, demoError, oauthFailed, google }: { next
         {oauthFailed && <p role="alert" className="mt-3 text-center text-[12px] text-coral-dark">That sign-in didn&apos;t finish. Try again, or use your email.</p>}
         <p className="mt-10 text-center text-[12.5px] text-muted">
           New to Tabiato?{" "}
-          <Link href="/signup" className="font-bold text-coral">Create an account</Link>
+          <Link href={`/signup${nextQuery(next)}`} className="font-bold text-coral">Create an account</Link>
         </p>
       </div>
     </main>

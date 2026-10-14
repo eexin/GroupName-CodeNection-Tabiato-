@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Ato } from "@/components/ato";
 import { MemoryMap } from "@/components/memory-map";
+import { searchPins } from "@/features/search/pins";
 import { AtoNote, BackHeader, Empty, Stars, buttonClass } from "@/components/ui";
 import { RecentSearches, RememberSearch } from "@/features/search/components/recent";
 import { requireUser } from "@/features/auth/guards";
@@ -48,7 +49,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             </div>
             <RememberSearch q={term} />
             {view === "map" && (
-              <MemoryMap pins={r.hits.map((h) => ({ id: h.id, lat: h.lat, lng: h.lng, count: 1, label: h.name }))} zoom={4} className="mt-4 h-[320px] rounded-[18px]" />
+              <MemoryMap pins={searchPins(r.hits)} zoom={4} className="mt-4 h-[320px] rounded-[18px]" />
             )}
             <ul className="mt-4 space-y-2.5">
               {r.hits.map((h) => (

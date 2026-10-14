@@ -84,11 +84,6 @@ export function staysPrompt(input: { destination: string; tier: Tier; hotels: Ra
 
 const BUDGET_KINDS = new Set(["hostel", "guest_house", "motel", "apartment"]);
 
-/** Template reason when Ato is unavailable — the same facts, plainly. */
-function templateReason(h: RankedStay) {
-  const type = h.kind === "guest_house" ? "guest house" : h.kind;
-  return `${h.stars ? `${h.stars}★ ` : ""}${type}, about ${h.km} km from your stops on average and closest to day ${h.nearDay}.`;
-}
 
 /**
  * Ato's picks, checked: only hotels from the ranked list, no repeats, at most 3. If Ato gave
@@ -100,7 +95,7 @@ export function applyStays(ai: z.infer<typeof staysSchema> | null, ranked: Ranke
   for (const s of ai?.stays ?? []) {
     const h = byRef.get(s.ref);
     if (!h || out.some((o) => o.ref === h.ref)) continue;
-    out.push({ ...h, reason: s.reason.trim() || templateReason(h) });
+    out.push({ ...h, reason: s.reason.trim() });
     if (out.length === 3) return out;
   }
   if (out.length) return out;
@@ -109,7 +104,9 @@ export function applyStays(ai: z.infer<typeof staysSchema> | null, ranked: Ranke
     : tier === "luxury" ? h.stars !== null && h.stars >= 4
     : h.kind === "hotel" && (h.stars === null || (h.stars >= 3 && h.stars <= 4));
   const ordered = [...ranked.filter(fits), ...ranked.filter((h) => !fits(h))];
-  return ordered.slice(0, 3).map((h) => ({ ...h, reason: templateReason(h) }));
+  // without Ato there is no reason to add: the plan already shows type, distance and nearest day,
+  // and repeating them reads as a glitch. An empty reason is not shown.
+  return ordered.slice(0, 3).map((h) => ({ ...h, reason: "" }));
 }
 
 /**

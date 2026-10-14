@@ -9,6 +9,7 @@ import { requireUser } from "@/features/auth/guards";
 import { computeFacts } from "@/features/memory-book/facts";
 import { getTrip } from "@/features/trips/data";
 import { formatRange } from "@/lib/time";
+import { shortName } from "@/lib/people";
 
 const COLORS = ["#b8402a", "#0e4c55", "#86570f", "#5c7fa8", "#536b68", "#7a6ba8"];
 
@@ -26,7 +27,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
   const facts = computeFacts({ places: t.places, photos: photos ?? [], ratings: ratings ?? [], expenses: (expenses ?? []).map((e) => ({ ...e, amount: myr(e) })), people: {} });
   const route = [...t.places].sort((a, b) => (a.first_seen_at ?? "").localeCompare(b.first_seen_at ?? ""));
   const highlights = [...t.places].filter((p) => p.photos > 0).sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || b.photos - a.photos).slice(0, 3);
-  const others = t.members.filter((m) => m.status === "joined" && m.user_id !== user.id).map((m) => m.person.name.split(" ")[0]);
+  const others = t.members.filter((m) => m.status === "joined" && m.user_id !== user.id).map((m) => shortName(m.person.name));
   const month = t.trip.start_date ? new Date(t.trip.start_date + "T00:00:00Z").toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" }) : null;
   const sub = [facts.totals.days ? `${facts.totals.days} days` : null, month, others.length ? `with ${others.join(", ")}` : null].filter(Boolean).join(" · ");
 

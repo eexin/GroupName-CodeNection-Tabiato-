@@ -7,6 +7,7 @@ import { CURRENCIES } from "@/lib/currency";
 import type { Person } from "@/lib/people";
 import { formatDay, formatTime } from "@/lib/time";
 import type { ActionResult } from "@/lib/types";
+import { shortName } from "@/lib/people";
 
 /** Figma 18 Memory details — shown right after an upload, for the place most of it landed in. */
 export function MemoryDetails({ place, tripId, members, currency, onDone }: {
@@ -57,7 +58,7 @@ export function MemoryDetails({ place, tripId, members, currency, onDone }: {
             {members.map((m) => (
               <label key={m.id} className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-full border border-line bg-card py-1 pl-1 pr-3 text-[12.5px] text-body has-[:checked]:border-coral has-[:checked]:bg-[#b8402a14]">
                 <input type="checkbox" name="who" value={m.id} defaultChecked className="sr-only" />
-                <Avatar p={m} size={32} />{m.name.split(" ")[0]}
+                <Avatar p={m} size={32} />{shortName(m.name)}
               </label>
             ))}
           </div>

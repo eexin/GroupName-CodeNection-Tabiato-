@@ -18,7 +18,9 @@ export async function reverseGeocode(supabase: SupabaseClient, lat: number, lng:
 
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&lat=${lat}&lon=${lng}`;
-    const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Language": "en" }, cache: "no-store" });
+    // a slow map service must not hold up an upload: after 6 s the place stays "Unnamed place"
+    // (the user can rename it, and the next upload tries again)
+    const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Language": "en" }, cache: "no-store", signal: AbortSignal.timeout(6000) });
     if (!res.ok) return null;
     const j = await res.json();
     const a = j.address ?? {};

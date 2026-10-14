@@ -397,10 +397,10 @@ test("hotels are ranked by distance to the whole plan, and Ato may only pick fro
   assert.deepEqual(picked.map((h) => h.name), ["Namba Hostel"]);
   assert.equal(picked[0].reason, "Steps from Dotonbori!");
 
-  // no AI: budget class first by type, then the closest; reasons use the real facts
+  // no AI: budget class first by type, then the closest; no reason that repeats the facts
   const fallback = applyStays(null, ranked, "budget");
   assert.equal(fallback[0].name, "Namba Hostel");
-  assert.match(fallback[0].reason, /km from your stops/);
+  assert.equal(fallback[0].reason, ""); // the plan shows type, distance and day already
   assert.equal(applyStays(null, ranked, "luxury")[0].name, "Middle Hotel");
 });
 
@@ -637,3 +637,28 @@ test("the planner follows your rhythm and how long you stay", () => {
   assert.equal(plan[0].start, "07:30");                // the day starts when you usually head out, not when the model guessed
 });
 const toMinutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+
+import { shortName } from "../src/lib/people";
+test("short names keep two-part given names whole", () => {
+  assert.equal(shortName("Max Teoh"), "Max");
+  assert.equal(shortName("Ee Xin"), "Ee Xin");
+  assert.equal(shortName("Qii"), "Qii");
+  assert.equal(shortName("  "), "Someone");
+});
+
+import { searchPins } from "../src/features/search/pins";
+test("search map: one pin per trip across trips, one per place within a trip", () => {
+  const h = (id: string, trip: string, lat: number) => ({ id, name: id, trip, lat, lng: 100 });
+  const many = searchPins([h("a", "Bali", -8.8), h("b", "Bali", -8.6), h("c", "Tokyo", 35.7)]);
+  assert.deepEqual(many.map((p) => `${p.label}:${p.count}`), ["Bali:2", "Tokyo:1"]);
+  assert.ok(Math.abs(many[0].lat - -8.7) < 1e-9);
+  assert.deepEqual(searchPins([h("a", "Bali", -8.8), h("b", "Bali", -8.6)]).map((p) => p.label), ["a", "b"]);
+});
+
+import { nextQuery } from "../src/lib/safe-next";
+test("an invite link survives sign-up; anything off-site is dropped", () => {
+  assert.equal(nextQuery("/join/abc123"), "?next=%2Fjoin%2Fabc123");
+  assert.equal(nextQuery("/"), "");
+  assert.equal(nextQuery("https://evil.com"), "");
+  assert.equal(nextQuery(null), "");
+});

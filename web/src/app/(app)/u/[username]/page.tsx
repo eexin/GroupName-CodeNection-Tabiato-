@@ -4,7 +4,7 @@ import { sendFriendRequest } from "@/features/friends/actions";
 import { Ato } from "@/components/ato";
 import { Avatar } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
-import { person, withAvatars } from "@/lib/people";
+import { person, withAvatars, shortName } from "@/lib/people";
 
 /** tabiato.app/u/<username> — the add-me link from Figma 22b/22c. */
 export default async function UserLinkPage({ params }: { params: Promise<{ username: string }> }) {
@@ -41,7 +41,7 @@ export default async function UserLinkPage({ params }: { params: Promise<{ usern
         <p className="rounded-full bg-surface px-4 py-2 text-[12.5px] font-bold text-muted">Request pending</p>
       ) : (
         <form action={async () => { "use server"; await sendFriendRequest(p.id); }} className="w-full max-w-[260px]">
-          <button className="h-12 w-full rounded-[15px] bg-coral text-[14px] font-bold text-white">Add {pp.name.split(" ")[0]} as a friend</button>
+          <button className="h-12 w-full rounded-[15px] bg-coral text-[14px] font-bold text-white">Add {shortName(pp.name)} as a friend</button>
         </form>
       )}
       <Link href="/friends" className="text-[13px] font-bold text-muted">Go to my friends</Link>

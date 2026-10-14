@@ -10,6 +10,16 @@ export function initials(name: string) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
+/**
+ * The name to use in a sentence: "Max Teoh" → "Max". A short first part is kept with the next
+ * one, because it is usually half of a two-part given name ("Ee Xin", not "Ee").
+ */
+export function shortName(name: string | null | undefined) {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "Someone";
+  return parts[0].length <= 2 && parts[1] ? `${parts[0]} ${parts[1]}` : parts[0];
+}
+
 export function colorFor(id: string) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;

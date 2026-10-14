@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { distanceM } from "@/lib/geo";
-import { person, type Person } from "@/lib/people";
+import { person, type Person, shortName } from "@/lib/people";
 import { signedUrls } from "@/lib/storage";
 import type { Trip } from "@/lib/types";
 import { placeName } from "@/features/community/trending";
@@ -101,7 +101,7 @@ export async function getActivity(supabase: SupabaseClient, userId: string, max 
     : { data: [] as { id: string; display_name: string; avatar_url: string | null; username: string | null }[] };
   const who = new Map((profiles ?? []).map((p) => [p.id, person(p.id, p.display_name, p.avatar_url)]));
   const handle = new Map((profiles ?? []).map((p) => [p.id, p.username]));
-  const first = (id: string) => (who.get(id)?.name ?? "Someone").split(" ")[0];
+  const first = (id: string) => shortName(who.get(id)?.name);
 
   const items: Activity[] = [
     ...(fresh ?? []).map((t) => ({ who: who.get(t.owner_id) ?? person(t.owner_id, null), text: `shared ${t.name}`, href: `/community/${t.id}`, at: t.created_at })),

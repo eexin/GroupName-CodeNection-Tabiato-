@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { safeNext } from "@/lib/safe-next";
+import { nextQuery, safeNext } from "@/lib/safe-next";
 import { origin } from "@/lib/origin";
 import { isDemoEmail } from "@/features/auth/demo";
 import { createClient } from "@/lib/supabase/server";
@@ -32,7 +32,7 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   if (error) return { error: error.message };
   // with "Confirm email" switched on in Supabase there is no session until they click the link
   if (!data.session) return { message: "Check your email and open the link to finish signing up." };
-  redirect("/welcome");
+  redirect(`/welcome${nextQuery(String(form.get("next") ?? ""))}`);
 }
 
 /** "Try the demo" — signs straight into the shared demo account (credentials stay on the server). */

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar, AtoNote, BackHeader, buttonClass } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
-import { person } from "@/lib/people";
+import { person, shortName } from "@/lib/people";
 import { groupConflicts } from "@/features/planner/itinerary";
 import { savedStyle } from "@/features/planner/learn";
 import { clock } from "@/features/planner/style";
@@ -20,7 +20,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
   const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, travel_style").in("id", (members ?? []).map((m) => m.user_id));
   const people = (profiles ?? []).map((p) => ({ ...person(p.id, p.display_name, p.avatar_url), style: (p.travel_style ?? {}) as TravelStyle, learned: savedStyle(p.travel_style) }));
   const { data: pinned } = await supabase.from("plan_stops").select("name, added_by, fixed_day, fixed_time").eq("trip_id", id).eq("source", "user").not("fixed_day", "is", null);
-  const nameOf = new Map(people.map((p) => [p.id, p.name.split(" ")[0]]));
+  const nameOf = new Map(people.map((p) => [p.id, shortName(p.name)]));
   const conflicts = groupConflicts(
     people.map((p) => ({ name: p.name, budget: p.style.budget, pace: p.style.pace, interests: p.style.interests, start: p.learned?.dayStart })),
     (pinned ?? []).map((s) => ({ name: s.name, by: nameOf.get(s.added_by) ?? "Someone", fixed_day: s.fixed_day, fixed_time: s.fixed_time })),
