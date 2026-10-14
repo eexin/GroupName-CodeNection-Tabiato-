@@ -30,12 +30,26 @@ export async function getCommunity(supabase: SupabaseClient, userId: string, fil
   if (filter === "saved") {
     const { data: s } = await supabase.from("saves").select("trip_id").eq("user_id", userId);
     const ids = (s ?? []).map((x) => x.trip_id);
-    if (ids.length) trips = ((await supabase.from("trips").select("*").in("id", ids).eq("is_public", true)).data ?? []) as Trip[];
+    if (ids.length) trips = ((await supabase.from("trips").select("*").in("id", ids).or("is_public.eq.true,friends_can_view.eq.true")).data ?? []) as Trip[];
   } else {
     trips = ((await supabase.from("trips").select("*").eq("is_public", true).neq("owner_id", userId).order("created_at", { ascending: false }).limit(40)).data ?? []) as Trip[];
   }
   if (dest) trips = trips.filter((t) => placeName(t).toLowerCase() === dest.toLowerCase());
   if (!trips.length) return [];
+  const { cards: built, followed } = await buildCards(supabase, userId, trips);
+  let cards = built;
+  if (filter === "foryou") cards.sort((a, b) => Number(followed.has(b.trip.owner_id)) - Number(followed.has(a.trip.owner_id)) || b.likes - a.likes);
+  if (filter === "budget") cards = cards.filter((c) => c.spend).sort((a, b) => a.spend! / a.days - b.spend! / b.days);
+  if (filter === "nearby" && near) {
+    cards = cards.filter((c) => c.trip.dest_lat != null)
+      .sort((a, b) => distanceM(near.lat, near.lng, a.trip.dest_lat!, a.trip.dest_lng!) - distanceM(near.lat, near.lng, b.trip.dest_lat!, b.trip.dest_lng!));
+  }
+  return cards;
+}
+
+/** Trips → cards with cover, route, days, shared spend, likes and saves. Shared by Community and profile pages. */
+export async function buildCards(supabase: SupabaseClient, userId: string, trips: Trip[]): Promise<{ cards: Card[]; followed: Set<string> }> {
+  if (!trips.length) return { cards: [], followed: new Set() };
   const ids = trips.map((t) => t.id);
 
   const [{ data: likes }, { data: saves }, { data: follows }, { data: authors }, { data: places }, { data: photos }] = await Promise.all([
@@ -55,7 +69,7 @@ export async function getCommunity(supabase: SupabaseClient, userId: string, fil
   const savedSet = new Set((saves ?? []).map((s) => s.trip_id));
   const spends = await Promise.all(trips.map((t) => sharedSpend(supabase, t.id)));
 
-  let cards: Card[] = trips.map((t, i) => {
+  const cards: Card[] = trips.map((t, i) => {
     const ps = (places ?? []).filter((p) => p.trip_id === t.id);
     return {
       trip: t, author: who.get(t.owner_id) ?? person(t.owner_id, null),
@@ -67,13 +81,17 @@ export async function getCommunity(supabase: SupabaseClient, userId: string, fil
       saved: savedSet.has(t.id),
     };
   });
+  return { cards, followed };
+}
 
-  if (filter === "foryou") cards.sort((a, b) => Number(followed.has(b.trip.owner_id)) - Number(followed.has(a.trip.owner_id)) || b.likes - a.likes);
-  if (filter === "budget") cards = cards.filter((c) => c.spend).sort((a, b) => a.spend! / a.days - b.spend! / b.days);
-  if (filter === "nearby" && near) {
-    cards = cards.filter((c) => c.trip.dest_lat != null)
-      .sort((a, b) => distanceM(near.lat, near.lng, a.trip.dest_lat!, a.trip.dest_lng!) - distanceM(near.lat, near.lng, b.trip.dest_lat!, b.trip.dest_lng!));
-  }
+/**
+ * A traveller's profile (/u/…): the trips they let you see — public ones, plus friends-only ones
+ * when you are their friend. RLS already hides the rest; private trips you were on stay off it.
+ */
+export async function getProfileTrips(supabase: SupabaseClient, viewerId: string, ownerId: string) {
+  const { data } = await supabase.from("trips").select("*").eq("owner_id", ownerId)
+    .or("is_public.eq.true,friends_can_view.eq.true").neq("status", "planned").order("start_date", { ascending: false });
+  const { cards } = await buildCards(supabase, viewerId, (data ?? []) as Trip[]);
   return cards;
 }
 

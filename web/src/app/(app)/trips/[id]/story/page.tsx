@@ -36,7 +36,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
       <BackHeader href={`/trips/${id}`} title="Trip story" subtitle={formatRange(t.trip.start_date, t.trip.end_date)}
         right={t.trip.is_public
           ? <ShareButton path={`/trips/${id}/story`} title={`${t.trip.name} — a Tabiato trip story`} className="bg-coral text-white" />
-          : t.isOwner ? <Link href={`/trips/${id}/options`} className="text-[11.5px] font-bold text-coral">Make public to share</Link> : null} />
+          : t.isOwner ? <Link href={`/trips/${id}/share`} className="text-[11.5px] font-bold text-coral">Make public to share</Link> : null} />
       <div className="space-y-5 px-6">
         <section>
           <p className="text-[10.5px] font-bold text-coral">TRIP STORY</p>

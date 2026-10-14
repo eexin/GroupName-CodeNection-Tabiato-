@@ -662,3 +662,15 @@ test("an invite link survives sign-up; anything off-site is dropped", () => {
   assert.equal(nextQuery("https://evil.com"), "");
   assert.equal(nextQuery(null), "");
 });
+
+import { areaLine, bboxOf, kindLabel } from "../src/lib/geo";
+test("search results say what and where, so the right one is obvious", () => {
+  assert.equal(areaLine({ suburb: "Pudong", city: "Shanghai", country: "China" }, "Shanghai Disneyland, 753, North Shendi Road, Pudong"), "Pudong, Shanghai, China");
+  assert.equal(areaLine({ state: "Bali", country: "Indonesia" }), "Bali, Indonesia");
+  assert.equal(areaLine({ city: "Singapore", country: "Singapore" }), "Singapore");
+  assert.equal(areaLine(undefined, "Senso-ji, Asakusa, Taito, Tokyo"), "Asakusa, Taito");
+  assert.deepEqual(bboxOf(["31.13", "31.15", "121.65", "121.67"]), [121.65, 31.13, 121.67, 31.15]);
+  assert.equal(bboxOf(["x", "1", "2", "3"]), undefined);
+  assert.equal(kindLabel("theme_park"), "Theme park");
+  assert.equal(kindLabel("yes"), "");
+});

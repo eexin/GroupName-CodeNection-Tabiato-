@@ -334,6 +334,15 @@ async function main() {
     { trip_id: hokkaido, place_id: null, paid_by: ids.mx, amount: 426, label: "JR pass", amount_myr: 426 },
   ]), "hokkaido spend");
 
+  // --- Max's friends-only trip: on his profile for Ee Xin (they are friends), never in Community ---
+  const seoulMax = await trip("mx", { name: "Seoul, two days", destination: "Seoul, South Korea", start_date: "2025-11-21", end_date: "2025-11-22", status: "finished", friends_can_view: true, dest_lat: 37.5665, dest_lng: 126.978, country_code: "KR" });
+  photos += await places(seoulMax, [
+    { name: "Gyeongbokgung Palace", category: "culture", lat: 37.5796, lng: 126.9770, arrive: at("2025-11-21", "09:30"), photos: 3, by: ["mx"], skip: 2, ratings: { mx: 4 } },
+    { name: "Gwangjang Market", category: "food", lat: 37.5700, lng: 126.9996, arrive: at("2025-11-21", "13:00"), photos: 3, by: ["mx"], skip: 1, ratings: { mx: 5 },
+      spend: [{ amount: 18000, currency: "KRW", myr: 58, label: "Bindaetteok and makgeolli", by: "mx" }] },
+    { name: "Bukchon Hanok Village", category: "culture", lat: 37.5826, lng: 126.9831, arrive: at("2025-11-22", "10:00"), photos: 2, by: ["mx"], skip: 1, ratings: { mx: 4 } },
+  ]);
+
   // --- Community: ten more public trips by other travellers, shared over the last few days. Dates
   //     are relative to the nightly reset, so the feed always reads "2h ago", "yesterday"…
   const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
@@ -460,7 +469,7 @@ async function main() {
   }
 
   const realCount = existsSync(PHOTO_DIR) ? readdirSync(PHOTO_DIR).filter((d) => !d.startsWith(".") && !d.endsWith(".md")).length : 0;
-  console.log(`\nDemo ready: ${Object.keys(PEOPLE).length} accounts, ${7 + SHARES.length} trips, ${photos} photos (${realCount ? `real photos for ${realCount} places` : "generated postcards — add real ones in scripts/demo-photos"}).\n`);
+  console.log(`\nDemo ready: ${Object.keys(PEOPLE).length} accounts, ${8 + SHARES.length} trips, ${photos} photos (${realCount ? `real photos for ${realCount} places` : "generated postcards — add real ones in scripts/demo-photos"}).\n`);
   console.log("Log in as any of these, password:", PASSWORD);
   for (const p of Object.values(PEOPLE)) console.log(`  ${p.name.padEnd(10)} ${p.email}`);
   console.log(`
@@ -469,6 +478,7 @@ Demo path as Ee Xin:
   Home → Tokyo → today's weather and Trip intel (alerts appear only for real nearby events)
   Home → Tokyo → "2 photos need a place" → place them on the map
   Home → accept Qii's Penang invite
+  Community → tap Max → his profile: Hokkaido (public) and "Seoul, two days" (friends only)
   Profile → "Your travel style": Ato read Bali, Seoul and Hong Kong (early riser, long meals, skips shopping)
   Trips → Planned → Osaka → Edit → Build my itinerary (days start at 7:45, meals get 90 min, blended with Max)
   Community → trending destinations, "Happening now", and twelve public trips

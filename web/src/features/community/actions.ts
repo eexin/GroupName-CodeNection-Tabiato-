@@ -21,18 +21,19 @@ export async function toggleSave(tripId: string, on: boolean) {
   revalidatePath(`/community/${tripId}`);
 }
 
-export async function toggleFollow(authorId: string, on: boolean, tripId: string) {
+export async function toggleFollow(authorId: string, on: boolean, tripId?: string) {
   const { supabase, user } = await requireUser();
   if (on) await supabase.from("follows").insert({ follower: user.id, followee: authorId });
   else await supabase.from("follows").delete().eq("follower", user.id).eq("followee", authorId);
-  revalidatePath(`/community/${tripId}`);
+  if (tripId) revalidatePath(`/community/${tripId}`);
+  revalidatePath("/u/[username]", "page");
 }
 
 /** Figma 23b "Use this as a starting point" — their places become your must-visits in a new plan. */
 export async function startFromTrip(sourceId: string) {
   const { supabase, user } = await requireUser();
   const [{ data: src }, { data: places }, { data: me }] = await Promise.all([
-    supabase.from("trips").select("*").eq("id", sourceId).eq("is_public", true).maybeSingle(),
+    supabase.from("trips").select("*").eq("id", sourceId).or("is_public.eq.true,friends_can_view.eq.true").maybeSingle(),
     supabase.from("places").select("name, lat, lng, category").eq("trip_id", sourceId).order("first_seen_at"),
     supabase.from("profiles").select("travel_style").eq("id", user.id).single(),
   ]);

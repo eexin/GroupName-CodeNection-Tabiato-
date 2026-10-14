@@ -8,8 +8,9 @@ import { FormMessage, Submit } from "@/components/submit";
 import { prepareImage } from "@/lib/image";
 import type { Person } from "@/lib/people";
 import { createClient } from "@/lib/supabase/client";
+import { AUDIENCE_LABEL, audienceOf } from "@/lib/types";
 
-type Initial = { id: string; name: string; destination: string | null; start_date: string | null; end_date: string | null; is_public: boolean; coverUrl: string | null };
+type Initial = { id: string; name: string; destination: string | null; start_date: string | null; end_date: string | null; is_public: boolean; friends_can_view?: boolean; coverUrl: string | null };
 
 /** Figma 16 New memory trip and "edit trip" — one form. */
 export function TripForm({ friends, members = [], initial }: { friends: Person[]; members?: string[]; initial?: Initial }) {
@@ -82,17 +83,22 @@ export function TripForm({ friends, members = [], initial }: { friends: Person[]
         )}
       </fieldset>
 
-      <div>
-        <h3 className="mb-2 text-[11px] font-bold text-ink">Visibility</h3>
-        <label className="flex items-center justify-between rounded-[18px] bg-card p-4 shadow-card">
-          <span>
-            <span className="block text-[13.5px] font-medium text-ink">Share to Community</span>
-            <span className="block text-[11px] text-muted">Off: only you and people you invite. On: anyone on Tabiato can see it.</span>
-          </span>
-          <input type="checkbox" name="is_public" defaultChecked={initial?.is_public} className="peer sr-only" />
-          <span aria-hidden className="relative h-7 w-12 shrink-0 rounded-full bg-surface transition-colors peer-checked:bg-coral peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-coral after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5" />
-        </label>
-      </div>
+      <fieldset>
+        <legend className="mb-2 text-[11px] font-bold text-ink">Who can see it</legend>
+        <div className="divide-y divide-line rounded-[18px] bg-card shadow-card">
+          {(["private", "friends", "public"] as const).map((a) => (
+            <label key={a} className="flex cursor-pointer items-center gap-3 px-4 py-3.5">
+              <input type="radio" name="audience" value={a} defaultChecked={(initial ? audienceOf(initial) : "private") === a}
+                className="h-5 w-5 shrink-0 accent-[#b8402a]" />
+              <span>
+                <span className="block text-[13.5px] font-medium text-ink">{AUDIENCE_LABEL[a].title}</span>
+                <span className="block text-[11px] text-muted">{AUDIENCE_LABEL[a].hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-muted">Your notes are always private, whatever you choose.</p>
+      </fieldset>
 
       <FormMessage error={state.error} message={uploading ? "Uploading your cover…" : undefined} />
       <Submit pending="Saving…">{initial ? "Save trip" : "Create trip"}</Submit>

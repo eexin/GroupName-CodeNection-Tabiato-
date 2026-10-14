@@ -5,7 +5,7 @@ import { requireUser } from "@/features/auth/guards";
 const ROWS = [
   ["Notes and receipts", "Always private. Only the people on a trip can see them — never the public, whatever a trip's sharing settings say."],
   ["Spending on public trips", "If you switch it on, others see category totals only (for example Food 38%) — never individual expenses or what you wrote on them."],
-  ["Public trips", "Off by default. When you share a trip, you choose whether photos, ratings and comments are visible, trip by trip, in Trip options."],
+  ["Who sees a trip", "Only the people on it, unless you choose otherwise in Trip options → Who can see it: your friends (on your profile, not in Community) or everyone (also in Community). You also choose whether photos, ratings, comments and spending totals are shown."],
   ["Who can add photos", "Set in Profile → Memory. Anyone you invite can be switched to view-only from the trip's members list."],
   ["Photo locations", "Read on your phone before upload. If a photo has none, we ask you where it was — we never guess."],
   ["AI", "Ato writes from the numbers we calculate from your trip. Your data isn't used to train anyone's model."],

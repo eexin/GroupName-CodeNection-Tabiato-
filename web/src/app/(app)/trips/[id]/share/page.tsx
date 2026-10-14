@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { setShareField, setTripPublic } from "@/features/trips/actions";
+import { setShareField, setTripAudience } from "@/features/trips/actions";
+import { AUDIENCE_LABEL, audienceOf } from "@/lib/types";
 import { BackHeader, Cover } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
 import { getTrip } from "@/features/trips/data";
@@ -12,7 +14,7 @@ function Toggle({ on }: { on: boolean }) {
   );
 }
 
-/** 36a Share to Community — preview, what others will see (enforced by RLS), and the switch. */
+/** 36a Who can see this trip — only its people, friends, or everyone (Community); and which parts. Enforced by RLS. */
 export default async function SharePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { supabase, user } = await requireUser();
@@ -20,6 +22,7 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
   if (!t) notFound();
   if (!t.isOwner) redirect(`/trips/${id}`);
   const ss = t.trip.share_settings ?? {};
+  const audience = audienceOf(t.trip);
   const on = (k: "photos" | "spend" | "comments") => ss[k] !== false;
   const owner = t.members.find((m) => m.role === "owner")?.person.name ?? "you";
   const firstThumb = Object.values(t.thumbs).find(Boolean) ?? null;
@@ -30,7 +33,7 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
   ];
   return (
     <main className="mx-auto min-h-dvh max-w-[430px] pb-10 lg:max-w-2xl lg:pt-4">
-      <BackHeader href={`/trips/${id}/options`} title="Share to Community" />
+      <BackHeader href={`/trips/${id}/options`} title="Who can see this trip" />
       <div className="space-y-5 px-6">
         <div className="overflow-hidden rounded-[20px] bg-card shadow-card">
           <Cover url={t.coverUrl ?? firstThumb} seed={id} className="h-32 w-full" />
@@ -41,7 +44,30 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
         </div>
 
         <section>
-          <h2 className="mb-2 text-[11px] font-bold text-ink">What others will see</h2>
+          <h2 className="mb-2 text-[11px] font-bold text-ink">Who can see it</h2>
+          <ul className="divide-y divide-line rounded-[18px] bg-card shadow-card">
+            {(["private", "friends", "public"] as const).map((a) => {
+              const chosen = audience === a;
+              return (
+                <li key={a}>
+                  <form action={async () => { "use server"; await setTripAudience(id, a); }}>
+                    <button aria-pressed={chosen} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+                      <span aria-hidden className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${chosen ? "border-coral" : "border-line"}`}>
+                        {chosen && <span className="h-2.5 w-2.5 rounded-full bg-coral" />}
+                      </span>
+                      <span><span className={`block text-[13px] ${chosen ? "font-bold text-ink" : "font-medium text-ink"}`}>{AUDIENCE_LABEL[a].title}</span><span className="block text-[10.5px] text-muted">{AUDIENCE_LABEL[a].hint}</span></span>
+                    </button>
+                  </form>
+                </li>
+              );
+            })}
+          </ul>
+          {audience === "public" && <Link href={`/community/${id}`} className="mt-2 inline-block min-h-[36px] content-center text-[12px] font-bold text-coral">See it in Community →</Link>}
+        </section>
+
+        <section className={audience === "private" ? "opacity-60" : ""}>
+          <h2 className="mb-2 text-[11px] font-bold text-ink">What {audience === "friends" ? "your friends" : "others"} will see</h2>
+          {audience === "private" && <p className="-mt-1 mb-2 text-[11px] text-muted">Applies when you share with friends or everyone.</p>}
           <ul className="divide-y divide-line rounded-[18px] bg-card shadow-card">
             {rows.map(([field, label, hint]) => {
               const isOn = on(field); // a plain boolean: inline server actions can only capture serialisable values
@@ -67,12 +93,6 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
           </ul>
         </section>
 
-        {(() => { const isPublic = t.trip.is_public; return (
-        <form action={async () => { "use server"; await setTripPublic(id, !isPublic); redirect(isPublic ? `/trips/${id}/share` : `/community/${id}`); }}>
-          <button className={`h-[52px] w-full rounded-[15px] text-[15px] font-bold ${t.trip.is_public ? "bg-surface text-deep" : "bg-coral text-white"}`}>
-            {isPublic ? "Stop sharing" : "Share to Community"}
-          </button>
-        </form>); })()}
       </div>
     </main>
   );

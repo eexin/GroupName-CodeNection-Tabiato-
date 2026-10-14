@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { BackHeader } from "@/components/ui";
+import { BackHeader, PersonLink } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
 import { person, shortName } from "@/lib/people";
 import { ThreadLive } from "./live";
@@ -15,7 +15,8 @@ export default async function ThreadPage({ params }: { params: Promise<{ userId:
   const p = person(other.id, other.display_name, other.avatar_url);
   return (
     <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-28">
-      <BackHeader href="/messages" title={p.name} />
+      <BackHeader href="/messages" title={p.name}
+        right={<PersonLink id={p.id} className="min-h-[40px] content-center text-[12.5px] font-bold text-coral">Profile</PersonLink>} />
       <ol className="space-y-2 px-5" aria-live="polite">
         {(msgs ?? []).map((m) => {
           const mine = m.sender === user.id;

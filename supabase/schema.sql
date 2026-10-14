@@ -67,6 +67,7 @@ create table public.trips (
   end_date     date,
   status       text not null default 'ongoing' check (status in ('planned', 'ongoing', 'finished')),
   is_public    boolean not null default false,
+  friends_can_view boolean not null default false,   -- not public, but the owner's friends may see it (their profile page)
   -- planner fields (Figma 29): destination centre from geocoding, budget, pace and interests
   dest_lat     double precision,
   dest_lng     double precision,
@@ -361,12 +362,27 @@ language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.trips where id = t and is_public);
 $$;
 
--- public AND the owner left this part switched on
+-- you and `other` are accepted friends
+create function public.is_friend(other uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.friendships where status = 'accepted'
+                 and ((requester = auth.uid() and addressee = other) or (requester = other and addressee = auth.uid())));
+$$;
+
+-- someone who isn't on the trip may see it: public, or friends-only and you are the owner's friend
+create function public.is_trip_visible(t uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.trips
+                 where id = t and (is_public or (friends_can_view and public.is_friend(owner_id))));
+$$;
+
+-- visible to you (public, or friends-only and you are a friend) AND the owner left this part on
 create function public.is_trip_shared(t uuid, part text) returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (
     select 1 from public.trips
-    where id = t and is_public and coalesce((share_settings ->> part)::boolean, true)
+    where id = t and (is_public or (friends_can_view and public.is_friend(owner_id)))
+      and coalesce((share_settings ->> part)::boolean, true)
   );
 $$;
 
@@ -452,7 +468,8 @@ create policy "friendships: remove" on public.friendships
 -- owner_id = auth.uid() matters: an insert that returns the new row is checked before the
 -- "add the owner as a member" trigger runs, so without it creating a trip would fail
 create policy "trips: read" on public.trips
-  for select to authenticated using (owner_id = auth.uid() or public.has_trip_access(id) or is_public);
+  for select to authenticated using (owner_id = auth.uid() or public.has_trip_access(id) or is_public
+                                     or (friends_can_view and public.is_friend(owner_id)));
 create policy "trips: create own" on public.trips
   for insert to authenticated with check (owner_id = auth.uid());
 create policy "trips: owner edits" on public.trips
@@ -493,9 +510,10 @@ create policy "members: leave or remove" on public.trip_members
   for delete to authenticated
   using (user_id = auth.uid() or public.is_trip_owner(trip_id));
 
--- places and photos: members read and add; public trips are readable by anyone signed in
+-- places and photos: members read and add; public trips are readable by anyone signed in,
+-- friends-only trips by the owner's friends
 create policy "places: read" on public.places
-  for select to authenticated using (public.is_trip_member(trip_id) or public.is_trip_public(trip_id));
+  for select to authenticated using (public.is_trip_member(trip_id) or public.is_trip_visible(trip_id));
 create policy "places: members write" on public.places
   for all to authenticated using (public.is_trip_member(trip_id)) with check (public.is_trip_member(trip_id));
 
@@ -574,11 +592,11 @@ revoke all on function public.join_trip(text) from public;
 revoke all on function public.join_trip(text) from anon;
 grant execute on function public.join_trip(text) to authenticated;
 
-create policy "likes: read" on public.likes for select to authenticated using (user_id = auth.uid() or public.is_trip_public(trip_id));
-create policy "likes: add own" on public.likes for insert to authenticated with check (user_id = auth.uid() and public.is_trip_public(trip_id));
+create policy "likes: read" on public.likes for select to authenticated using (user_id = auth.uid() or public.is_trip_visible(trip_id));
+create policy "likes: add own" on public.likes for insert to authenticated with check (user_id = auth.uid() and public.is_trip_visible(trip_id));
 create policy "likes: remove own" on public.likes for delete to authenticated using (user_id = auth.uid());
 create policy "saves: own" on public.saves for select to authenticated using (user_id = auth.uid());
-create policy "saves: add own" on public.saves for insert to authenticated with check (user_id = auth.uid() and public.is_trip_public(trip_id));
+create policy "saves: add own" on public.saves for insert to authenticated with check (user_id = auth.uid() and public.is_trip_visible(trip_id));
 create policy "saves: remove own" on public.saves for delete to authenticated using (user_id = auth.uid());
 create policy "follows: read" on public.follows for select to authenticated using (true);
 create policy "follows: add own" on public.follows for insert to authenticated with check (follower = auth.uid());

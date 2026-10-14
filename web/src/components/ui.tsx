@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Ato } from "@/components/ato";
 import type { Person } from "@/lib/people";
+import { profileHref } from "@/lib/people";
 
 export function BackHeader({ href, title, subtitle, right }: { href: string; title: string; subtitle?: string; right?: React.ReactNode }) {
   return (
@@ -138,4 +139,9 @@ export function Fab({ href, label, icon = "plus", aboveNav = true }: { href: str
       )}
     </Link>
   );
+}
+
+/** A person's name or avatar that opens their profile. */
+export function PersonLink({ id, className = "", children, label }: { id: string; className?: string; children: React.ReactNode; label?: string }) {
+  return <Link href={profileHref(id)} aria-label={label} className={className}>{children}</Link>;
 }

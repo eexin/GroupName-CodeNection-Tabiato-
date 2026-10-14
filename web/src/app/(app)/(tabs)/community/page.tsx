@@ -9,6 +9,7 @@ import { trending } from "@/features/community/trending";
 import { money } from "@/lib/currency";
 import { timeAgo } from "@/lib/time";
 import { shortName } from "@/lib/people";
+import { PersonLink } from "@/components/ui";
 
 const Heart = ({ on }: { on: boolean }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden><path d="M12 20s-7-4.4-9.2-8.6C1.2 8.2 3 4.5 6.6 4.5c2.2 0 3.6 1.3 4.4 2.6.8-1.3 2.2-2.6 4.4-2.6 3.6 0 5.4 3.7 3.8 6.9C19 15.6 12 20 12 20Z" fill={on ? "#b8402a" : "none"} stroke={on ? "#b8402a" : "#536b68"} strokeWidth={1.8} /></svg>
@@ -78,11 +79,13 @@ export default async function CommunityPage({ searchParams }: { searchParams: Pr
           <ul className="mt-2 divide-y divide-line">
             {activity.map((a, i) => (
               <li key={i}>
-                <Link href={a.href} className="flex min-h-[48px] items-center gap-3 py-2">
-                  <Avatar p={a.who} size={30} />
-                  <span className="min-w-0 flex-1 text-[12px] leading-snug text-body"><strong className="text-ink">{shortName(a.who.name)}</strong> {a.text}</span>
-                  <span className="shrink-0 text-[10.5px] text-muted">{timeAgo(a.at)}</span>
-                </Link>
+                <div className="flex min-h-[48px] items-center gap-3 py-2">
+                  <PersonLink id={a.who.id} label={`${a.who.name}'s profile`} className="shrink-0"><Avatar p={a.who} size={30} /></PersonLink>
+                  <Link href={a.href} className="flex min-w-0 flex-1 items-center gap-3">
+                    <span className="min-w-0 flex-1 text-[12px] leading-snug text-body"><strong className="text-ink">{shortName(a.who.name)}</strong> {a.text}</span>
+                    <span className="shrink-0 text-[10.5px] text-muted">{timeAgo(a.at)}</span>
+                  </Link>
+                </div>
               </li>
             ))}
           </ul>
@@ -111,13 +114,15 @@ export default async function CommunityPage({ searchParams }: { searchParams: Pr
                   <Cover url={c.coverUrl} seed={c.trip.id} className="h-40 w-full" />
                   <span className="absolute left-4 top-3.5 rounded-full bg-white/95 px-3 py-1 text-[9.5px] font-bold text-ink">PUBLIC</span>
                 </span>
-                <span className="flex items-center gap-2.5 px-4 pt-3">
-                  <Avatar p={c.author} size={32} />
-                  <span className="min-w-0">
-                    <span className="block text-[12.5px] font-bold text-ink">{c.author.name} <span className="font-normal text-muted">· {timeAgo(c.trip.created_at)}</span></span>
-                    <span className="block truncate text-[10.5px] text-muted">{c.route}</span>
-                  </span>
+              </Link>
+              <PersonLink id={c.author.id} className="flex items-center gap-2.5 px-4 pt-3">
+                <Avatar p={c.author} size={32} />
+                <span className="min-w-0">
+                  <span className="block text-[12.5px] font-bold text-ink">{c.author.name} <span className="font-normal text-muted">· {timeAgo(c.trip.created_at)}</span></span>
+                  <span className="block truncate text-[10.5px] text-muted">{c.route}</span>
                 </span>
+              </PersonLink>
+              <Link href={`/community/${c.trip.id}`} className="block">
                 <span className="block px-4 pt-2 text-[15px] font-bold text-ink">
                   {c.days} days in {c.trip.destination?.split(",")[0] ?? c.trip.name}{c.spend ? ` on ${money(Math.round(c.spend))}` : ""}
                 </span>

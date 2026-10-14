@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { categorise, type Category } from "@/lib/categories";
+import { areaLine, bboxOf, kindLabel } from "@/lib/geo";
 import type { Candidate } from "@/features/planner/itinerary";
 import { aiJSON } from "@/lib/ai";
 import { NAMED_SYSTEM, namedPrompt, namedSchema, namesToCheck, toCandidate } from "@/features/planner/named-places";
@@ -43,10 +44,11 @@ const coolOff = new Map<string, number>();
 const COOL_OFF_MS = 5 * 60_000;
 
 /** `type` is the map's own tag value (e.g. "temple", "attraction"), so a vague one can be refined. */
-export type SearchHit = { name: string; lat: number; lng: number; category: Category; type?: string; ref: string; detail: string };
+/** bbox is [west, south, east, north]: how much of the map the place covers (a park, a whole city). */
+export type SearchHit = { name: string; lat: number; lng: number; category: Category; type?: string; ref: string; detail: string; bbox?: [number, number, number, number] };
 
 export async function searchPlaces(q: string, near?: { lat: number; lng: number }): Promise<SearchHit[]> {
-  const params = new URLSearchParams({ format: "jsonv2", q, limit: "6", addressdetails: "0" });
+  const params = new URLSearchParams({ format: "jsonv2", q, limit: "6", addressdetails: "1" });
   if (near) {
     const d = 0.5; // ~50 km box, a preference not a filter
     params.set("viewbox", `${near.lng - d},${near.lat + d},${near.lng + d},${near.lat - d}`);
@@ -57,14 +59,16 @@ export async function searchPlaces(q: string, near?: { lat: number; lng: number 
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return [];
-    const rows = (await res.json()) as { name?: string; display_name: string; lat: string; lon: string; category?: string; class?: string; type?: string; osm_type?: string; osm_id?: number }[];
+    const rows = (await res.json()) as { name?: string; display_name: string; lat: string; lon: string; category?: string; class?: string; type?: string; osm_type?: string; osm_id?: number; address?: Parameters<typeof areaLine>[0]; boundingbox?: string[] }[];
     return rows.map((r) => ({
       name: r.name || r.display_name.split(",")[0],
       lat: Number(r.lat), lng: Number(r.lon),
       category: categorise(r.category ?? r.class, r.type),
       type: r.type,
       ref: `${r.osm_type ?? "x"}/${r.osm_id ?? r.display_name}`,
-      detail: r.display_name.split(",").slice(1, 3).join(",").trim(),
+      // "Theme park · Pudong, Shanghai, China": what it is and where, so the right result is obvious
+      detail: [kindLabel(r.type), areaLine(r.address, r.display_name)].filter(Boolean).join(" · "),
+      bbox: bboxOf(r.boundingbox),
     }));
   } catch {
     return [];

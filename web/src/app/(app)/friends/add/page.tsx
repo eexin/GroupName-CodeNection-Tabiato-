@@ -6,6 +6,7 @@ import { CopyButton } from "@/components/copy-button";
 import { requireUser } from "@/features/auth/guards";
 import { QrScanner } from "@/features/friends/components/qr-scanner";
 import { person, withAvatars } from "@/lib/people";
+import { PersonLink } from "@/components/ui";
 
 /** 22c Add friend — by @username, exact email or name; your link and QR; people you travelled with. */
 export default async function AddFriendPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
@@ -39,11 +40,13 @@ export default async function AddFriendPage({ searchParams }: { searchParams: Pr
     const s = status.get(id);
     return (
       <li className="flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">
-        <Avatar p={pp} />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13.5px] font-bold text-ink">{pp.name}</span>
-          {sub && <span className="block text-[10.5px] text-muted">{sub}</span>}
-        </span>
+        <PersonLink id={pp.id} className="flex min-w-0 flex-1 items-center gap-3">
+          <Avatar p={pp} />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13.5px] font-bold text-ink">{pp.name}</span>
+            {sub && <span className="block text-[10.5px] text-muted">{sub}</span>}
+          </span>
+        </PersonLink>
         {s === "Sent you a request" ? (
           <span className="flex items-center gap-2">
             <span className="text-[10.5px] text-muted">{s}</span>
@@ -121,8 +124,10 @@ async function AskingRows({ ids }: { ids: string[] }) {
           const pp = person(p.id, p.display_name, p.avatar_url);
           return (
             <li key={p.id} className="flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">
-              <Avatar p={pp} />
-              <span className="min-w-0 flex-1"><span className="block truncate text-[13.5px] font-bold text-ink">{pp.name}</span><span className="block text-[10.5px] text-muted">Sent you a request</span></span>
+              <PersonLink id={pp.id} className="flex min-w-0 flex-1 items-center gap-3">
+                <Avatar p={pp} />
+                <span className="min-w-0 flex-1"><span className="block truncate text-[13.5px] font-bold text-ink">{pp.name}</span><span className="block text-[10.5px] text-muted">Sent you a request</span></span>
+              </PersonLink>
               <form action={respondToFriend.bind(null, p.id, true)}><button className="min-h-[40px] rounded-full bg-coral px-4 text-[11.5px] font-bold text-white">Accept</button></form>
             </li>
           );

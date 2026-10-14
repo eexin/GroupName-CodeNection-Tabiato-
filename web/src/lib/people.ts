@@ -20,6 +20,9 @@ export function shortName(name: string | null | undefined) {
   return parts[0].length <= 2 && parts[1] ? `${parts[0]} ${parts[1]}` : parts[0];
 }
 
+/** A traveller's profile page. Works with an id, so any name or avatar in the app can link to it. */
+export const profileHref = (id: string) => `/u/${id}`;
+
 export function colorFor(id: string) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;

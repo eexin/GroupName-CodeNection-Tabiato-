@@ -31,7 +31,7 @@ export default async function TripPage({ params, searchParams }: { params: Promi
   const t = await getTrip(supabase, id, user.id);
   if (!t) notFound();
   if (t.trip.status === "planned") redirect(`/plan/${id}`);
-  if (!t.isMember && t.trip.is_public) redirect(`/community/${id}`);
+  if (!t.isMember && (t.trip.is_public || t.trip.friends_can_view)) redirect(`/community/${id}`);
 
   const timeline = view === "timeline";
   const finished = t.trip.status === "finished";

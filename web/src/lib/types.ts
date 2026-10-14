@@ -40,6 +40,7 @@ export type Trip = {
   end_date: string | null;
   status: TripStatus;
   is_public: boolean;
+  friends_can_view?: boolean;
   dest_lat: number | null;
   dest_lng: number | null;
   country_code: string | null;
@@ -106,4 +107,15 @@ export type ActionResult = { error?: string; ok?: boolean };
 export type Hazard = {
   id: string; type: string; name: string; level: string; country: string; from: string; to: string | null;
   lat: number; lng: number; km: number; url: string | null; demo?: boolean;
+};
+
+/** Who can see a trip besides the people on it. Stored as is_public + friends_can_view. */
+export type Audience = "private" | "friends" | "public";
+export const audienceOf = (t: { is_public: boolean; friends_can_view?: boolean | null }): Audience =>
+  t.is_public ? "public" : t.friends_can_view ? "friends" : "private";
+export const audienceFields = (a: Audience) => ({ is_public: a === "public", friends_can_view: a === "friends" });
+export const AUDIENCE_LABEL: Record<Audience, { title: string; hint: string }> = {
+  private: { title: "Only people on this trip", hint: "Nobody else can see it" },
+  friends: { title: "Friends", hint: "Your friends see it on your profile. Not in Community" },
+  public: { title: "Everyone", hint: "On your profile and in Community" },
 };

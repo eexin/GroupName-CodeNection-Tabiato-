@@ -77,10 +77,21 @@ function pinEl(pin: Pin, onSelect?: (id: string) => void) {
   return el;
 }
 
+/** The pin for "here": big, coral, outlined, above the trip's own pins, so it is never missed. */
+function pickEl() {
+  const el = document.createElement("div");
+  el.style.zIndex = "5";
+  el.setAttribute("aria-hidden", "true");
+  el.innerHTML = `<svg width="38" height="50" viewBox="0 0 38 50" style="display:block;filter:drop-shadow(0 4px 6px rgba(10,58,66,.45))">
+    <path d="M19 48C19 48 3 30.5 3 19a16 16 0 0 1 32 0C35 30.5 19 48 19 48Z" fill="#B8402A" stroke="#fff" stroke-width="3"/>
+    <circle cx="19" cy="19" r="6" fill="#fff"/></svg>`;
+  return el;
+}
+
 /** Fit the pins into the part of the map that isn't covered (`inset`). */
-function frame(map: MLMap, pins: Pin[], zoom: number, inset: { top: number; bottom: number } | undefined, duration: number) {
+function frame(map: MLMap, pins: Pin[], zoom: number, inset: { top: number; bottom: number } | undefined, duration: number, pointZoom = 13) {
   const top = inset?.top ?? 0, bottom = inset?.bottom ?? 0;
-  if (pins.length === 1) map.easeTo({ center: [pins[0].lng, pins[0].lat], zoom: Math.max(zoom, 13), offset: [0, (top - bottom) / 2], duration });
+  if (pins.length === 1) map.easeTo({ center: [pins[0].lng, pins[0].lat], zoom: Math.max(zoom, pointZoom), offset: [0, (top - bottom) / 2], duration });
   else if (pins.length > 1) {
     const b = new LngLatBounds();
     pins.forEach((p) => b.extend([p.lng, p.lat]));
@@ -108,10 +119,13 @@ type Props = {
   /** extra space to keep clear when framing the pins, e.g. what a sheet or header covers */
   fitInset?: { top: number; bottom: number };
   /** fly here, e.g. to a place the user just searched for */
-  focus?: { lng: number; lat: number } | null;
+  /** Fly here. With bbox ([west, south, east, north]) the whole place fits: a park, a district, a city. */
+  focus?: { lng: number; lat: number; bbox?: [number, number, number, number] } | null;
+  /** How close to zoom in when there is a single pin: street level by default, a country for an overview. */
+  pointZoom?: number;
 };
 
-export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], zoom = 2.6, className, atmosphere = true, attribution = true, fitInset, focus }: Props) {
+export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], zoom = 2.6, className, atmosphere = true, attribution = true, fitInset, focus, pointZoom = 13 }: Props) {
   // server renders the default; the browser switches to the saved theme right after hydration
   const themeName = useSyncExternalStore(noSubscribe, themeFromCookie, () => "water");
   const theme = THEMES[themeName] ?? THEMES.water;
@@ -169,26 +183,30 @@ export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], 
           .setLngLat([p.lng, p.lat])
           .addTo(map),
       );
-      frame(map, pins, zoom, fitInsetRef.current, 0);
+      frame(map, pins, zoom, fitInsetRef.current, 0, pointZoom);
     };
     if (ready.current) draw();
     else pendingDraw.current = draw;
-  }, [pins, zoom]);
+  }, [pins, zoom, pointZoom]);
 
   // the visible part of the map changed (a sheet slid over it): frame the pins in what's left
   const insetKey = fitInset ? `${Math.round(fitInset.top)}:${Math.round(fitInset.bottom)}` : "";
   useEffect(() => {
-    if (ready.current && mapRef.current && insetKey) frame(mapRef.current, pins, zoom, fitInsetRef.current, 300);
+    if (ready.current && mapRef.current && insetKey) frame(mapRef.current, pins, zoom, fitInsetRef.current, 300, pointZoom);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [insetKey]);
 
 
 
-  const focusKey = focus ? `${focus.lng.toFixed(6)},${focus.lat.toFixed(6)}` : "";
+  const focusKey = focus ? `${focus.lng.toFixed(6)},${focus.lat.toFixed(6)},${focus.bbox?.join(",") ?? ""}` : "";
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !focus) return;
-    const go = () => map.flyTo({ center: [focus.lng, focus.lat], zoom: Math.max(map.getZoom(), 15), duration: 900 });
+    // a place with an outline is shown whole, with its surroundings, so it is recognisable;
+    // a single point gets a street-level view with enough around it to tell where it is
+    const go = () => focus.bbox
+      ? map.fitBounds([[focus.bbox[0], focus.bbox[1]], [focus.bbox[2], focus.bbox[3]]], { padding: 56, maxZoom: 16, duration: 900 })
+      : map.flyTo({ center: [focus.lng, focus.lat], zoom: 15, duration: 900 });
     if (ready.current) go();
     else map.once("load", go);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -198,7 +216,7 @@ export function MemoryMap({ pins, onSelect, onPick, picked, center = [118, 18], 
     const map = mapRef.current;
     if (!map) return;
     pickMarker.current?.remove();
-    pickMarker.current = picked ? new Marker({ color: "#E8623F" }).setLngLat([picked.lng, picked.lat]).addTo(map) : null;
+    pickMarker.current = picked ? new Marker({ element: pickEl(), anchor: "bottom" }).setLngLat([picked.lng, picked.lat]).addTo(map) : null;
   }, [picked]);
 
   return (

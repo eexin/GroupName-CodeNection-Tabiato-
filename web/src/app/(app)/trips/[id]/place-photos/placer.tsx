@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { findPlace, placePhotos } from "@/features/places/photo-actions";
 import { MemoryMap, type Pin } from "@/components/memory-map";
 import { buttonClass } from "@/components/ui";
+import { mapsLink } from "@/lib/geo";
 
 type Hit = Awaited<ReturnType<typeof findPlace>>[number];
 
@@ -18,7 +19,8 @@ export function Placer({ tripId, photos, pins, near }: { tripId: string; photos:
   const [selected, setSelected] = useState<Set<string>>(new Set(photos.map((p) => p.id)));
   const [picked, setPicked] = useState<{ lng: number; lat: number } | null>(null);
   const [pickedName, setPickedName] = useState<string | null>(null);
-  const [focus, setFocus] = useState<{ lng: number; lat: number } | null>(null);
+  const [pickedArea, setPickedArea] = useState("");   // shown under the map; never saved as the name
+  const [focus, setFocus] = useState<{ lng: number; lat: number; bbox?: [number, number, number, number] } | null>(null);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<Hit[] | null>(null);
   const [searching, startSearch] = useTransition();
@@ -31,7 +33,7 @@ export function Placer({ tripId, photos, pins, near }: { tripId: string; photos:
   }
   function choose(h: Hit) {
     const at = { lng: h.lng, lat: h.lat };
-    setPicked(at); setFocus(at); setPickedName(h.name); setHits(null);
+    setPicked(at); setFocus({ ...at, bbox: h.bbox }); setPickedName(h.name); setPickedArea(h.detail.split(" · ").pop() ?? ""); setHits(null);
   }
 
   const toggle = (id: string) =>
@@ -86,13 +88,20 @@ export function Placer({ tripId, photos, pins, near }: { tripId: string; photos:
         </div>
       )}
 
-      <MemoryMap pins={pins} picked={picked} focus={focus} onPick={(at) => { setPicked(at); setPickedName(null); }}
+      <MemoryMap pins={pins} picked={picked} focus={focus} onPick={(at) => { setPicked(at); setPickedName(null); setPickedArea(""); }}
         zoom={pins.length ? 12 : 2.6} className="mt-4 h-[340px] rounded-[20px]" />
       <p role="status" className="mt-2 text-center text-[11.5px] text-muted">
         {picked
-          ? pickedName ? <><strong className="text-ink">{pickedName}</strong>. Tap the map to fine-tune the pin.</> : "Pin dropped. Tap again to move it."
+          ? pickedName ? <><strong className="text-ink">{pickedName}</strong>{pickedArea ? `, ${pickedArea}` : ""}. Tap the map to fine-tune the pin.</> : "Pin dropped. Tap again to move it."
           : "Search above, or tap the map where these were taken."}
       </p>
+      {picked && (
+        <p className="mt-1 text-center">
+          <a href={mapsLink(picked.lat, picked.lng)} target="_blank" rel="noopener noreferrer" className="inline-block min-h-[32px] content-center text-[12px] font-bold text-deep underline-offset-2 hover:underline">
+            Check this spot on Google Maps ↗
+          </a>
+        </p>
+      )}
       <button onClick={save} disabled={!picked || !selected.size || busy} className={`${buttonClass("primary")} mt-4`}>
         {busy ? "Placing…" : `Place ${selected.size} photo${selected.size === 1 ? "" : "s"} here`}
       </button>

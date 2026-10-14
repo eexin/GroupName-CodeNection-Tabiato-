@@ -5,6 +5,7 @@ import { Avatar, AtoNote, BackHeader, ButtonLink } from "@/components/ui";
 import { DemoLocked } from "@/components/demo-notice";
 import { requireUser } from "@/features/auth/guards";
 import { getTrip } from "@/features/trips/data";
+import { PersonLink } from "@/components/ui";
 
 /** 21 Trip members, with the owner's ••• menu and the leave confirmation. */
 export default async function MembersPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ confirm?: string; locked?: string; reminded?: string }> }) {
@@ -51,11 +52,13 @@ export default async function MembersPage({ params, searchParams }: { params: Pr
         <h2 className="text-[11px] font-bold text-ink">Members</h2>
         {joined.map((m) => (
           <div key={m.user_id} className="flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">
+            <PersonLink id={m.person.id} className="flex min-w-0 flex-1 items-center gap-3">
             <Avatar p={m.person} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13.5px] font-bold text-ink">{m.person.name}</p>
               <p className="text-[10.5px] text-muted">{m.role === "owner" ? "Owner" : m.role === "viewer" ? "Can't add photos — can rate, note and comment" : "Can add photos"}</p>
             </div>
+            </PersonLink>
             {m.user_id === user.id ? (
               <span className="rounded-full bg-surface px-3 py-1 text-[10.5px] font-bold text-deep">You</span>
             ) : t.isOwner ? (

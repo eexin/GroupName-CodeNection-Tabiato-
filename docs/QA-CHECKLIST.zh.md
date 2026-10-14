@@ -72,6 +72,10 @@
 - [ ] Tokyo →「2 photos need a place」→ 搜索「Senso-ji」→ 选结果 → 地图飞过去 → Place 2 photos here
 - [ ] iPhone：上传页有 Options → Location 的提示；照片选取时打开后能自动定位
 - [ ] Hokkaido → 花费 RM 1,800、Ato 比价、Follow、按赞、Save
+- [ ] Community 点作者 Max → 他的 profile：地图 + 2 趟行程（Hokkaido 公开、Seoul, two days 标 FRIENDS）；Following / Friends ✓ / Message
+- [ ] 点不是朋友的人（例如 Jason）→ 只看到公开行程，有 Add friend，底下写「Some … trips may be for friends only」
+- [ ] 行程 → ••• → Who can see it：私人 / Friends / Everyone 三选一；选 Friends 后不出现在 Community，但朋友的 profile 看得到
+- [ ] 放照片搜索「Shanghai Disneyland」→ 结果写「Theme park · Pudong, Shanghai, China」→ 地图缩放到整个园区、中间有大红针 →「Check this spot on Google Maps」能打开正确位置
 - [ ] Use this as a starting point → 新计划里有 Hokkaido 的地点
 - [ ] Message Max → 送出 → Profile → Messages 看得到对话
 

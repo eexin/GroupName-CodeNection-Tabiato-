@@ -10,6 +10,7 @@ import { getTrip } from "@/features/trips/data";
 import { CATEGORY_LABEL, type Category } from "@/lib/categories";
 import { money, myr } from "@/lib/currency";
 import { person, shortName } from "@/lib/people";
+import { PersonLink } from "@/components/ui";
 
 const COLORS = ["#b8402a", "#0e4c55", "#86570f", "#5c7fa8", "#536b68", "#7a6ba8"];
 const days = (s: string | null, e: string | null) => (s && e ? Math.round((Date.parse(e) - Date.parse(s)) / 86400000) + 1 : 1);
@@ -19,7 +20,8 @@ export default async function PublicTripPage({ params }: { params: Promise<{ id:
   const { id } = await params;
   const { supabase, user } = await requireUser();
   const t = await getTrip(supabase, id, user.id);
-  if (!t || (!t.trip.is_public && !t.isMember)) notFound();
+  // public, or friends-only for the owner's friends (RLS already hid it from everyone else)
+  if (!t || (!t.trip.is_public && !t.trip.friends_can_view && !t.isMember)) notFound();
   const authorId = t.trip.owner_id;
   const [{ data: author }, { count: authorTrips }, { count: followers }, { data: iFollow }, { count: likes }, { data: myLike }, { data: mySave }, spend] = await Promise.all([
     supabase.from("profiles").select("id, display_name, avatar_url").eq("id", authorId).single(),
@@ -60,7 +62,7 @@ export default async function PublicTripPage({ params }: { params: Promise<{ id:
         <Cover url={t.thumbs[highlights[0]?.id] ?? null} seed={id} className="h-56 w-full" />
         <div className="absolute inset-x-0 top-0 flex justify-between px-5 pt-[max(1rem,env(safe-area-inset-top))]">
           <Link href="/community" aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-[16px] font-bold text-ink">‹</Link>
-          <span className="h-fit rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold text-ink">PUBLIC</span>
+          <span className="h-fit rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold text-ink">{t.trip.is_public ? "PUBLIC" : t.trip.friends_can_view ? "FRIENDS" : "PRIVATE"}</span>
         </div>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-6 pb-4 pt-10 text-white">
           <h1 className="text-[24px] font-bold leading-tight">{len} days in {t.trip.destination?.split(",")[0] ?? t.trip.name}</h1>
@@ -70,11 +72,13 @@ export default async function PublicTripPage({ params }: { params: Promise<{ id:
 
       <div className="space-y-5 px-6 pt-5">
         <section className="flex items-center gap-3 rounded-[18px] bg-card p-4 shadow-card">
+          <PersonLink id={a.id} className="flex min-w-0 flex-1 items-center gap-3">
           <Avatar p={a} />
           <div className="min-w-0 flex-1">
             <p className="text-[13.5px] font-bold text-ink">{a.name}</p>
-            <p className="text-[10.5px] text-muted">{authorTrips ?? 0} public trip{authorTrips === 1 ? "" : "s"} · {followers ?? 0} follower{followers === 1 ? "" : "s"}</p>
+            <p className="text-[10.5px] text-muted">{authorTrips ?? 0} public trip{authorTrips === 1 ? "" : "s"} · {followers ?? 0} follower{followers === 1 ? "" : "s"} · <span className="font-bold text-deep">Profile ›</span></p>
           </div>
+          </PersonLink>
           {user.id !== authorId && (
             <form action={toggleFollow.bind(null, authorId, !iFollow, id)}>
               <button aria-pressed={Boolean(iFollow)} className={`min-h-[40px] rounded-full px-4 text-[12px] font-bold ${iFollow ? "bg-surface text-deep" : "bg-coral text-white"}`}>{iFollow ? "Following" : "Follow"}</button>

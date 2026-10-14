@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/features/auth/guards";
 import { geocodeDestination } from "@/features/planner/osm";
-import type { ActionResult } from "@/lib/types";
+import { audienceFields, type ActionResult, type Audience } from "@/lib/types";
 import { isDemoEmail } from "@/features/auth/demo";
 
 export type TripState = { error?: string };
@@ -17,10 +17,18 @@ const tripSchema = z
     start_date: z.string().optional(),
     end_date: z.string().optional(),
     is_public: z.boolean(),
+    friends_can_view: z.boolean(),
   })
   .refine((t) => !t.start_date || !t.end_date || t.end_date >= t.start_date, {
     message: "The end date is before the start date.",
   });
+
+/** "audience" from the form (private, friends or public); the old "Share to Community" switch still works. */
+function audienceFrom(form: FormData): Audience {
+  const a = String(form.get("audience") ?? "");
+  if (a === "private" || a === "friends" || a === "public") return a;
+  return form.get("is_public") === "on" ? "public" : "private";
+}
 
 /** The role a new invitee gets, from the owner's "Let friends add to my trips" switch. */
 async function inviteRole(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], ownerId: string) {
@@ -37,7 +45,7 @@ export async function createTripForm(_: CreateResult, form: FormData): Promise<C
     destination: form.get("destination") || undefined,
     start_date: form.get("start_date") || undefined,
     end_date: form.get("end_date") || undefined,
-    is_public: form.get("is_public") === "on",
+    ...audienceFields(audienceFrom(form)),
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const { supabase, user } = await requireUser();
@@ -67,7 +75,7 @@ export async function updateTrip(tripId: string, _: CreateResult, form: FormData
     destination: form.get("destination") || undefined,
     start_date: form.get("start_date") || undefined,
     end_date: form.get("end_date") || undefined,
-    is_public: form.get("is_public") === "on",
+    ...audienceFields(audienceFrom(form)),
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const { supabase, user } = await requireUser();
@@ -112,7 +120,7 @@ export async function createTrip(_: TripState, form: FormData): Promise<TripStat
     destination: form.get("destination") || undefined,
     start_date: form.get("start_date") || undefined,
     end_date: form.get("end_date") || undefined,
-    is_public: form.get("is_public") === "on",
+    ...audienceFields(audienceFrom(form)),
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const { supabase, user } = await requireUser();
@@ -138,10 +146,13 @@ export async function endTrip(tripId: string) {
   redirect(`/trips/${tripId}/book`);
 }
 
-export async function setTripPublic(tripId: string, isPublic: boolean): Promise<ActionResult> {
+/** Who can see the trip: only its people, the owner's friends too, or everyone (Community). */
+export async function setTripAudience(tripId: string, audience: Audience): Promise<ActionResult> {
+  if (!["private", "friends", "public"].includes(audience)) return { error: "Unknown choice." };
   const { supabase, user } = await requireUser();
-  const { error } = await supabase.from("trips").update({ is_public: isPublic }).eq("id", tripId).eq("owner_id", user.id);
+  const { error } = await supabase.from("trips").update(audienceFields(audience)).eq("id", tripId).eq("owner_id", user.id);
   revalidatePath(`/trips/${tripId}`);
+  revalidatePath(`/trips/${tripId}/share`);
   return error ? { error: "Only the trip owner can change this." } : { ok: true };
 }
 

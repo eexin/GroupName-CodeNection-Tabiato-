@@ -7,6 +7,7 @@ import { requireUser } from "@/features/auth/guards";
 import { person } from "@/lib/people";
 import { profileLink } from "@/features/friends/link";
 import { CopyButton } from "@/components/copy-button";
+import { PersonLink } from "@/components/ui";
 
 /** 22 Friends and 22b empty state. */
 export default async function FriendsPage({ searchParams }: { searchParams: Promise<{ locked?: string }> }) {
@@ -39,11 +40,13 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
         {incoming.length > 0 && <h2 className="mb-2 text-[11px] font-bold text-ink">Requests</h2>}
         {incoming.map((f) => (
           <div key={f.requester} className="mb-3 flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">
-            <Avatar p={other(f)} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13.5px] font-bold text-ink">{other(f).name}</p>
-              <p className="text-[10.5px] text-muted">wants to travel with you</p>
-            </div>
+            <PersonLink id={other(f).id} className="flex min-w-0 flex-1 items-center gap-3">
+              <Avatar p={other(f)} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13.5px] font-bold text-ink">{other(f).name}</p>
+                <p className="text-[10.5px] text-muted">wants to travel with you</p>
+              </div>
+            </PersonLink>
             <form action={respondToFriend.bind(null, f.requester, true)}><button className="rounded-full bg-coral px-3 py-1.5 text-[11px] font-bold text-white">Accept</button></form>
             <form action={respondToFriend.bind(null, f.requester, false)}><button className="rounded-full bg-surface px-3 py-1.5 text-[11px] font-bold text-muted">Skip</button></form>
           </div>
@@ -70,8 +73,10 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
             <ul className="space-y-3">
               {friends.map((f) => (
                 <li key={`${f.requester}-${f.addressee}`} className="flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">
-                  <Avatar p={other(f)} />
-                  <p className="flex-1 truncate text-[13.5px] font-bold text-ink">{other(f).name}</p>
+                  <PersonLink id={other(f).id} className="flex min-w-0 flex-1 items-center gap-3">
+                    <Avatar p={other(f)} />
+                    <p className="flex-1 truncate text-[13.5px] font-bold text-ink">{other(f).name}</p>
+                  </PersonLink>
                   <Link href={`/messages/${other(f).id}`} className="min-h-[40px] content-center px-2 text-[11.5px] font-bold text-deep">Message</Link>
                   <form action={removeFriend.bind(null, other(f).id)}><button className="text-[11px] font-bold text-muted">Remove</button></form>
                 </li>

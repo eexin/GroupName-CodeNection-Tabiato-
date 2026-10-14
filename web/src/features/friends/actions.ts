@@ -11,6 +11,7 @@ export async function sendFriendRequest(addressee: string): Promise<ActionResult
   if (addressee === user.id) return { error: "That's you." };
   const { error } = await supabase.from("friendships").insert({ requester: user.id, addressee, status: "pending" });
   revalidatePath("/friends");
+  revalidatePath("/u/[username]", "page");
   if (error?.code === "23505") return { error: "Request already sent." };
   return error ? { error: "Couldn't send the request." } : { ok: true };
 }
@@ -23,6 +24,7 @@ export async function respondToFriend(requester: string, accept: boolean) {
     await supabase.from("friendships").delete().eq("requester", requester).eq("addressee", user.id);
   }
   revalidatePath("/friends");
+  revalidatePath("/u/[username]", "page");
 }
 
 export async function removeFriend(other: string) {
@@ -32,4 +34,5 @@ export async function removeFriend(other: string) {
     `and(requester.eq.${user.id},addressee.eq.${other}),and(requester.eq.${other},addressee.eq.${user.id})`,
   );
   revalidatePath("/friends");
+  revalidatePath("/u/[username]", "page");
 }

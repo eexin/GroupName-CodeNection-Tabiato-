@@ -7,6 +7,7 @@ import { groupConflicts } from "@/features/planner/itinerary";
 import { savedStyle } from "@/features/planner/learn";
 import { clock } from "@/features/planner/style";
 import type { TravelStyle } from "@/lib/types";
+import { PersonLink } from "@/components/ui";
 
 const BUDGET: Record<string, string> = { budget: "Budget", mid: "Mid-range", luxury: "Luxury" };
 
@@ -33,11 +34,13 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
       <div className="space-y-3 px-6">
         {people.map((p) => (
           <div key={p.id} className="flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">
-            <Avatar p={p} />
-            <div className="min-w-0 flex-1">
-              <p className="text-[13.5px] font-bold text-ink">{p.name}{p.id === user.id ? " (you)" : ""}</p>
-              <p className="truncate text-[11px] text-muted">{(p.style.interests ?? []).join(", ") || "No interests set"}</p>
-            </div>
+            <PersonLink id={p.id} className="flex min-w-0 flex-1 items-center gap-3">
+              <Avatar p={p} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[13.5px] font-bold text-ink">{p.name}{p.id === user.id ? " (you)" : ""}</p>
+                <p className="truncate text-[11px] text-muted">{(p.style.interests ?? []).join(", ") || "No interests set"}</p>
+              </div>
+            </PersonLink>
             <div className="text-right text-[11px]">
               <p className="font-bold text-deep">{BUDGET[p.style.budget ?? ""] ?? "—"}</p>
               <p className="text-muted">{p.style.pace ?? "—"} pace</p>

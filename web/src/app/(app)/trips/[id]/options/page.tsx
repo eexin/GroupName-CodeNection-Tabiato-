@@ -5,6 +5,7 @@ import { BackHeader } from "@/components/ui";
 import { DemoLocked } from "@/components/demo-notice";
 import { requireUser } from "@/features/auth/guards";
 import { shortName } from "@/lib/people";
+import { AUDIENCE_LABEL, audienceOf } from "@/lib/types";
 
 const Chevron = () => (
   <svg width="8" height="14" viewBox="0 0 8 14" aria-hidden><path d="M1 1 7 7 1 13" fill="none" stroke="#B9CFCC" strokeWidth={1.8} strokeLinecap="round" /></svg>
@@ -70,7 +71,7 @@ export default async function OptionsPage({ params, searchParams }: { params: Pr
       {owner && (
         <ul className="mx-6 mt-4 divide-y divide-line rounded-[18px] bg-card shadow-card">
           <li><Link href={`/trips/${id}/share`} className="flex items-center justify-between px-4 py-4 text-[13.5px] font-medium text-body">
-            <span>Share to Community<span className="block text-[11px] text-muted">{trip.is_public ? "Shared — tap to change what others see" : "Only people on this trip can see it"}</span></span><Chevron /></Link></li>
+            <span>Who can see it<span className="block text-[11px] text-muted">{AUDIENCE_LABEL[audienceOf(trip)].title} — tap to change</span></span><Chevron /></Link></li>
         </ul>
       )}
 
