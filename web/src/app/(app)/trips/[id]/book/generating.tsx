@@ -27,7 +27,7 @@ export function Generating({ tripId, tripName }: { tripId: string; tripName: str
   }, [tripId, router]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col items-center bg-gradient-to-b from-[#17707a] to-deeper px-8 pt-24 text-white">
+    <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col items-center bg-gradient-to-b from-[#17707a] to-deeper wide:max-w-none px-8 pt-24 text-white">
       <Ato size={150} />
       <h1 className="mt-6 text-center text-[24px] font-bold leading-tight">I&apos;m writing<br /><span className="text-sand">{tripName}</span></h1>
       <p className="mt-3 text-center text-[12.5px] text-[#8fbdb8]">This takes a few seconds.</p>

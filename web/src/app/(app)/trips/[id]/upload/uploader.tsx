@@ -199,7 +199,7 @@ export function Uploader({ tripId, tripName, userId, autoPin = true, members = [
             {located ? "I'll pin them to places automatically." : ""}
             {unlocated ? ` ${unlocated} ${unlocated === 1 ? "doesn't" : "don't"} — I won't guess; you'll place ${unlocated === 1 ? "it" : "them"} after.` : ""}
           </AtoNote>
-          <ul className="mt-4 grid grid-cols-3 gap-2">
+          <ul className="mt-4 grid grid-cols-3 gap-2 wide:grid-cols-6">
             {items.map((i) => (
               <li key={i.key} className="relative aspect-square overflow-hidden rounded-[14px] bg-surface">
                 {i.preview
@@ -234,7 +234,7 @@ export function Uploader({ tripId, tripName, userId, autoPin = true, members = [
 
       {reading && <p className="mt-4 text-center text-[12px] text-muted">Reading photo details…</p>}
 
-      <div className="mt-6 grid grid-cols-2 gap-3">
+      <div className="mt-6 grid grid-cols-2 gap-3 wide:mx-auto wide:max-w-lg">
         <label className={`${buttonClass("deep")} cursor-pointer text-[13.5px]`}>
           From library
           <input type="file" accept="image/*,.heic,.heif" multiple className="sr-only" onChange={(e) => onPick(e, false)} />

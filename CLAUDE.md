@@ -60,6 +60,9 @@ see docs/ARCHITECTURE.md. Put new code in the feature it belongs to.
 - Use tokens, never raw hex: `bg-paper`, `bg-card`, `bg-surface`, `text-ink`, `text-body`,
   `text-muted`, `bg-coral`, `bg-deep`, `bg-aqua`, `text-sand`, `shadow-card`, `shadow-sheet`.
 - Mobile-first. Content column is `max-w-[430px] mx-auto`. Respect `env(safe-area-inset-*)`.
+- Wider screens use `wide:` (a computer, or a phone turned sideways), not `lg:`. `land:` is a phone
+  on its side (icon rail, ~390px tall), `desk:` a computer. Under `wide:` a page uses two columns and
+  nothing is `fixed` over content. See "Screen sizes" in docs/ARCHITECTURE.md.
 - Font is Poppins (bundled locally). Weights 400, 500, 700 only.
 - When the AI is speaking, show **Ato** (`<Ato />` from `components/ato.tsx`) and write the
   copy in first person as Ato: "I noticed…", "I can pin them to 3 places."

@@ -17,7 +17,7 @@ export default async function EndTripPage({ params }: { params: Promise<{ id: st
   ]);
 
   return (
-    <main className="mx-auto grid min-h-dvh max-w-[430px] place-items-center lg:max-w-none bg-deeper/90 px-8">
+    <main className="mx-auto grid min-h-dvh max-w-[430px] place-items-center wide:max-w-none bg-deeper/90 px-8">
       <div className="w-full max-w-[400px] rounded-[26px] bg-card p-6 shadow-sheet">
         <div className="flex items-start justify-between">
           <h1 className="text-[22px] font-bold text-ink">End this trip?</h1>

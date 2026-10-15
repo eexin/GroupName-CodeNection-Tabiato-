@@ -12,6 +12,18 @@ web/src/
 **Dependency rule:** `app → features → lib / components`. Never the other way. Enforced by ESLint
 (`no-restricted-imports` in `eslint.config.mjs`), so a violation fails CI rather than slipping in.
 
+**Screen sizes:** three layouts from one set of pages, chosen in CSS (`web/src/app/globals.css`):
+
+| Screen | Variant | Layout |
+| --- | --- | --- |
+| Phone held upright | (none) | one 430px column, bottom nav, floating camera / comment / like bars |
+| Phone or small tablet turned sideways | `wide:` + `land:` | icon rail on the left, two columns, pictures shorter (a phone on its side is ~390px tall) |
+| Computer, 1024px and up | `wide:` + `desk:` | full sidebar, two columns |
+
+Under `wide:` nothing floats over content: bars that are pinned to the bottom on a phone sit in the
+page instead. Two-column pages either name their columns with grid areas or use `TWO_COLUMNS`
+(`lib/layout.ts`). Code that needs the same test in JavaScript uses `WIDE_QUERY` from there.
+
 **Data access:** every query runs as the signed-in user, so Postgres row-level security decides
 what is visible (`supabase/schema.sql`, 35+ policies, tested). The service-role key is used only
 for the AI cache and the demo seed.

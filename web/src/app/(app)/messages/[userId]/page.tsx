@@ -14,7 +14,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ userId:
     .order("created_at").limit(300);
   const p = person(other.id, other.display_name, other.avatar_url);
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-28">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-28 wide:max-w-3xl wide:pt-4">
       <BackHeader href="/messages" title={p.name}
         right={<PersonLink id={p.id} className="min-h-[40px] content-center text-[12.5px] font-bold text-coral">Profile</PersonLink>} />
       <ol className="space-y-2 px-5" aria-live="polite">

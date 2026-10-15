@@ -49,7 +49,9 @@ export function Placer({ tripId, photos, pins, near }: { tripId: string; photos:
   }
 
   return (
-    <div className="px-6">
+    // wide: photos, search and "Place" on the left; the map, tall, on the right
+    <div className="grid px-6 [grid-template-areas:'find'_'map'_'save'] wide:grid-cols-2 wide:gap-x-8 wide:[grid-template-areas:'find_map'_'save_map'] wide:[grid-template-rows:auto_1fr]">
+      <div className="min-w-0 [grid-area:find]">
       <p className="text-[12px] text-muted">Pick the photos taken at the same spot, then search for where that was, or tap it on the map.</p>
       <ul className="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
         {photos.map((p) => (
@@ -88,12 +90,15 @@ export function Placer({ tripId, photos, pins, near }: { tripId: string; photos:
         </div>
       )}
 
+      </div>
+
       <MemoryMap pins={pins} picked={picked} focus={focus} onPick={(at) => { setPicked(at); setPickedName(null); setPickedArea(""); }}
-        zoom={pins.length ? 12 : 2.6} className="mt-4 h-[340px] rounded-[20px]" />
+        zoom={pins.length ? 12 : 2.6} className="mt-4 h-[340px] rounded-[20px] [grid-area:map] wide:sticky wide:top-4 wide:mt-0 wide:h-[calc(100dvh-140px)] wide:max-h-[620px] land:h-[calc(100dvh-100px)]" />
+      <div className="min-w-0 [grid-area:save]">
       <p role="status" className="mt-2 text-center text-[11.5px] text-muted">
         {picked
           ? pickedName ? <><strong className="text-ink">{pickedName}</strong>{pickedArea ? `, ${pickedArea}` : ""}. Tap the map to fine-tune the pin.</> : "Pin dropped. Tap again to move it."
-          : "Search above, or tap the map where these were taken."}
+          : "Search for the place, or tap the map where these were taken."}
       </p>
       {picked && (
         <p className="mt-1 text-center">
@@ -105,6 +110,7 @@ export function Placer({ tripId, photos, pins, near }: { tripId: string; photos:
       <button onClick={save} disabled={!picked || !selected.size || busy} className={`${buttonClass("primary")} mt-4`}>
         {busy ? "Placing…" : `Place ${selected.size} photo${selected.size === 1 ? "" : "s"} here`}
       </button>
+      </div>
     </div>
   );
 }

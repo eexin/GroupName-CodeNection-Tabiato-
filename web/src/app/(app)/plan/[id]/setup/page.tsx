@@ -5,6 +5,7 @@ import { Avatars, BackHeader } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
 import { getTrip } from "@/features/trips/data";
 import { SetupForm } from "./form";
+import { TWO_COLUMNS } from "@/lib/layout";
 
 /** 29 Plan a trip — an existing plan: preferences, who's coming, must-visits, generate. */
 export default async function SetupPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,9 +19,9 @@ export default async function SetupPage({ params }: { params: Promise<{ id: stri
   const people = (t?.members ?? []).filter((m) => m.user_id !== user.id).map((m) => m.person);
   const owner = trip.owner_id === user.id;
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href={`/plan/${id}`} title="Plan a trip" subtitle={trip.destination ?? trip.name} />
-      <div className="space-y-5 px-6">
+      <div className={`space-y-5 px-6 ${TWO_COLUMNS}`}>
         <section>
           <h2 className="mb-2 text-[11px] font-bold text-ink">Travel with</h2>
           <div className="flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">

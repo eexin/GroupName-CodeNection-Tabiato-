@@ -9,7 +9,7 @@ export default async function NewPlanPage() {
   // what your finished trips say about how you travel; empty until you have finished one
   const learned = await learnForUser(supabase, user.id);
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] wide:max-w-2xl wide:pt-4 pb-10">
       <BackHeader href="/plan" title="Plan a trip" />
       <div className="px-6"><PlanForm style={profile.travel_style ?? {}} suggested={{ pace: learned.pace ?? null, interests: learned.interests ?? [] }} /></div>
     </main>

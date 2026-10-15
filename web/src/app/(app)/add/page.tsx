@@ -28,7 +28,7 @@ export default async function AddPage() {
   // finished trips no longer take photos, and view-only members can't add any
   const trips = all.filter((t) => t.trip.status === "ongoing" && !viewOnly.has(t.trip.id));
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] wide:max-w-2xl wide:pt-4 pb-10">
       <BackHeader href="/" title="Add to Tabiato" subtitle="What are you adding?" />
       <div className="space-y-3 px-6">
         {trips.slice(0, 3).map((t) => (

@@ -8,7 +8,7 @@ export default async function NewTripPage() {
   const { supabase, user } = await requireUser();
   const friends = await getFriends(supabase, user.id);
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href="/" title="New memory trip" />
       <div className="px-6"><TripForm friends={friends} /></div>
     </main>

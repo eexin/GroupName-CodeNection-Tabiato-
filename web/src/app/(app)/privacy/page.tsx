@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BackHeader } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
+import { TWO_COLUMNS } from "@/lib/layout";
 
 const ROWS = [
   ["Notes and receipts", "Always private. Only the people on a trip can see them — never the public, whatever a trip's sharing settings say."],
@@ -15,9 +16,9 @@ const ROWS = [
 export default async function PrivacyPage() {
   await requireUser();
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href="/profile" title="Privacy & sharing" />
-      <ul className="space-y-3 px-6">
+      <ul className={`space-y-3 px-6 ${TWO_COLUMNS}`}>
         {ROWS.map(([t, d]) => (
           <li key={t} className="rounded-[16px] bg-card p-4 shadow-card">
             <p className="text-[13px] font-bold text-ink">{t}</p>

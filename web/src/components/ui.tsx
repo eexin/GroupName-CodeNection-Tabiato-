@@ -128,7 +128,7 @@ export function Cover({ url, seed, className = "" }: { url: string | null; seed:
 export function Fab({ href, label, icon = "plus", aboveNav = true }: { href: string; label: string; icon?: "plus" | "camera"; aboveNav?: boolean }) {
   return (
     <Link href={href} aria-label={label}
-      className={`fixed ${aboveNav ? "bottom-[calc(92px+env(safe-area-inset-bottom))]" : "bottom-[calc(1.25rem+env(safe-area-inset-bottom))]"} right-[max(1.25rem,calc(50%-215px+1.25rem))] z-30 grid h-14 w-14 lg:hidden place-items-center rounded-full bg-coral shadow-fab transition-transform active:scale-95`}>
+      className={`fixed ${aboveNav ? "bottom-[calc(92px+env(safe-area-inset-bottom))]" : "bottom-[calc(1.25rem+env(safe-area-inset-bottom))]"} right-[max(1.25rem,calc(50%-215px+1.25rem))] z-30 grid h-14 w-14 wide:hidden place-items-center rounded-full bg-coral shadow-fab transition-transform active:scale-95`}>
       {icon === "plus" ? (
         <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden><path d="M11 4v14M4 11h14" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" /></svg>
       ) : (

@@ -10,7 +10,7 @@ import { FormMessage, Submit } from "@/components/submit";
 export default function ResetPasswordPage() {
   const [state, action] = useActionState<AuthState, FormData>(updatePassword, {});
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] px-6 pt-[max(1.5rem,env(safe-area-inset-top))] lg:pt-20">
+    <main className="mx-auto min-h-dvh max-w-[430px] px-6 pt-[max(1.5rem,env(safe-area-inset-top))] wide:pt-20">
       <div className="flex justify-end"><Ato size={84} mood="happy" /></div>
       <h1 className="mt-4 text-[27px] font-bold text-ink">Choose a new password</h1>
       <form action={action} className="mt-8 space-y-4">

@@ -36,7 +36,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   const tier: Tier | undefined = trip.plan_style?.stay_tier;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 lg:max-w-6xl lg:pt-4">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-6xl wide:pt-4">
       <BackHeader href="/trips?tab=planned" title={`${trip.name}, ${days} day${days === 1 ? "" : "s"}`} subtitle={formatRange(trip.start_date, trip.end_date)}
         right={<Link href={`/plan/${id}/setup`} className="min-h-[40px] content-center text-[12.5px] font-bold text-coral">Edit</Link>} />
 
@@ -45,7 +45,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
           Add the places you&apos;d hate to miss, then I&apos;ll build the days around them.
         </Empty>
       ) : (
-        <div className="grid px-6 [grid-template-areas:'top'_'map'_'bottom'] lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-x-8 lg:px-10 lg:[grid-template-areas:'map_top'_'map_bottom'] lg:[grid-template-rows:auto_1fr]">
+        <div className="grid px-6 [grid-template-areas:'top'_'map'_'bottom'] wide:grid-cols-[minmax(0,1fr)_420px] wide:gap-x-8 wide:px-10 wide:[grid-template-areas:'map_top'_'map_bottom'] wide:[grid-template-rows:auto_1fr]">
           <div className="[grid-area:top]">
           <nav aria-label="Days" className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
             {Array.from({ length: days }, (_, i) => (
@@ -96,7 +96,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
 
           </div>
           <div className="[grid-area:map]">
-          <MemoryMap pins={today.map((s, i) => ({ id: s.id, lat: s.lat, lng: s.lng, count: i + 1, label: s.name }))} zoom={12} className="mt-3 h-[200px] rounded-[18px] lg:sticky lg:top-6 lg:mt-0 lg:h-[calc(100dvh-140px)]" />
+          <MemoryMap pins={today.map((s, i) => ({ id: s.id, lat: s.lat, lng: s.lng, count: i + 1, label: s.name }))} zoom={12} className="mt-3 h-[200px] rounded-[18px] wide:sticky wide:top-6 wide:mt-0 wide:h-[calc(100dvh-140px)]" />
           </div>
           <div className="[grid-area:bottom]">
 

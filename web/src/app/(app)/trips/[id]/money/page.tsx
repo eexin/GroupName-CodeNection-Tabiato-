@@ -11,8 +11,8 @@ import { shortName } from "@/lib/people";
 import { formatDay } from "@/lib/time";
 
 const rm = (n: number) => money(Math.round(n * 100) / 100);
-const H2 = ({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) => (
-  <div className="mb-2 mt-7 flex items-baseline justify-between gap-3">
+const H2 = ({ children, right, top }: { children: React.ReactNode; right?: React.ReactNode; top?: boolean }) => (
+  <div className={`mb-2 mt-7 flex items-baseline justify-between gap-3 ${top ? "wide:mt-0" : ""}`}>
     <h2 className="text-[15px] font-bold text-ink">{children}</h2>
     {right && <span className="shrink-0 text-[11px] text-muted">{right}</span>}
   </div>
@@ -36,9 +36,11 @@ export default async function MoneyPage({ params }: { params: Promise<{ id: stri
   const kittyOn = L.kitty.in > 0 || L.kitty.spent > 0;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] pb-28 lg:max-w-2xl lg:pt-4">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-28 wide:max-w-5xl wide:pb-10 wide:pt-4">
       <BackHeader href={`/trips/${id}`} title="Money" subtitle={trip.name} />
-      <div className="px-6">
+      {/* wide: budget, settle up and the kitty on the left; every expense on the right */}
+      <div className="px-6 wide:grid wide:grid-cols-2 wide:items-start wide:gap-8">
+        <div className="min-w-0">
 
         {/* budget: one total for the whole trip, in RM */}
         <section aria-labelledby="budget" className="rounded-[20px] bg-card p-4 shadow-card">
@@ -202,8 +204,11 @@ export default async function MoneyPage({ params }: { params: Promise<{ id: stri
           </>
         )}
 
+        </div>
+
         {/* every expense, including ones not at a place (stay, flights) */}
-        <H2 right={`${m.expenses.length} ${m.expenses.length === 1 ? "expense" : "expenses"}`}>All spending</H2>
+        <div className="min-w-0">
+        <H2 top right={`${m.expenses.length} ${m.expenses.length === 1 ? "expense" : "expenses"}`}>All spending</H2>
         <details className="group" open={m.expenses.length === 0}>
           <summary className="flex h-11 cursor-pointer list-none items-center justify-center rounded-[14px] bg-coral text-[13px] font-bold text-white group-open:hidden [&::-webkit-details-marker]:hidden">+ Add expense</summary>
           <ExpenseForm tripId={id} members={m.members} me={me} currency={cur} places={m.places} kitty={L.kitty.in > 0} />
@@ -236,6 +241,7 @@ export default async function MoneyPage({ params }: { params: Promise<{ id: stri
         {m.expenses.some((e) => e.place_id) && (
           <p className="mt-3 text-center text-[11px] text-muted">Spending at a place also shows on that place. <Link href={`/trips/${id}`} className="font-bold text-coral">See places</Link></p>
         )}
+        </div>
       </div>
     </main>
   );

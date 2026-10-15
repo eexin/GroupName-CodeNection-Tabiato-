@@ -53,8 +53,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const first = shortName(pp.name);
 
   return (
-    <main className="pb-10 lg:mx-auto lg:max-w-2xl lg:pt-6">
-      <section className="bg-gradient-to-b from-[#17707a] to-deeper px-6 pb-6 pt-[max(1rem,env(safe-area-inset-top))] text-white lg:rounded-[24px]">
+    <main className="mx-auto max-w-[430px] pb-10 wide:grid wide:max-w-5xl wide:grid-cols-2 wide:items-start wide:gap-8 wide:px-6 wide:pt-6">
+      {/* wide: who they are and where they've been on the left, their trips on the right */}
+      <div className="min-w-0">
+      <section className="bg-gradient-to-b from-[#17707a] to-deeper px-6 pb-6 pt-[max(1rem,env(safe-area-inset-top))] text-white wide:rounded-[24px]">
         <Link href="/community" aria-label="Back" className="-ml-2 grid h-10 w-10 place-items-center">
           <svg width="10" height="17" viewBox="0 0 10 17" aria-hidden><path d="M8.5 1.5 2 8.5l6.5 7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" /></svg>
         </Link>
@@ -100,16 +102,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         )}
       </section>
 
-      <div className="px-6">
+      {cards.length > 0 && pins.length > 0 && (
+        <section className="mt-6 px-6 wide:px-0">
+          <h2 className="mb-2 text-[11px] font-bold text-ink">Where {me ? "you've" : `${first} has`} been</h2>
+          <LinkedMap pins={pins} base="/community" zoom={2.6} pointZoom={4} className="h-[220px] rounded-[18px] wide:h-[300px]" />
+        </section>
+      )}
+      </div>
+
+      <div className="min-w-0 px-6 wide:px-0">
         {cards.length ? (
           <>
-            {pins.length > 0 && (
-              <section className="mt-6">
-                <h2 className="mb-2 text-[11px] font-bold text-ink">Where {me ? "you've" : `${first} has`} been</h2>
-                <LinkedMap pins={pins} base="/community" zoom={2.6} pointZoom={4} className="h-[220px] rounded-[18px]" />
-              </section>
-            )}
-            <section className="mt-6">
+            <section className="mt-6 wide:mt-0">
               <h2 className="mb-2 text-[11px] font-bold text-ink">{me ? "Trips others can see" : `${first}'s trips`} · {cards.length}</h2>
               <ul className="space-y-3">
                 {cards.map((c) => (

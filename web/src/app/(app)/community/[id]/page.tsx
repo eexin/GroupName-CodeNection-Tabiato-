@@ -57,9 +57,9 @@ export default async function PublicTripPage({ params }: { params: Promise<{ id:
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-28">
-      <section className="relative">
-        <Cover url={t.thumbs[highlights[0]?.id] ?? null} seed={id} className="h-56 w-full" />
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-28 wide:max-w-5xl wide:pb-10 wide:pt-4">
+      <section className="relative wide:mx-6 wide:overflow-hidden wide:rounded-[24px]">
+        <Cover url={t.thumbs[highlights[0]?.id] ?? null} seed={id} className="h-56 w-full wide:h-64 land:h-44" />
         <div className="absolute inset-x-0 top-0 flex justify-between px-5 pt-[max(1rem,env(safe-area-inset-top))]">
           <Link href="/community" aria-label="Back" className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-[16px] font-bold text-ink">‹</Link>
           <span className="h-fit rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold text-ink">{t.trip.is_public ? "PUBLIC" : t.trip.friends_can_view ? "FRIENDS" : "PRIVATE"}</span>
@@ -70,7 +70,9 @@ export default async function PublicTripPage({ params }: { params: Promise<{ id:
         </div>
       </section>
 
-      <div className="space-y-5 px-6 pt-5">
+      {/* wide: who and where on the left; like/save/message, cost and "use this" on the right */}
+      <div className="px-6 pt-5 wide:grid wide:grid-cols-2 wide:items-start wide:gap-8">
+      <div className="min-w-0 space-y-5">
         <section className="flex items-center gap-3 rounded-[18px] bg-card p-4 shadow-card">
           <PersonLink id={a.id} className="flex min-w-0 flex-1 items-center gap-3">
           <Avatar p={a} />
@@ -88,7 +90,7 @@ export default async function PublicTripPage({ params }: { params: Promise<{ id:
 
         <section>
           <h2 className="mb-2 text-[11px] font-bold text-ink">The route</h2>
-          <MemoryMap pins={route.map((p, i) => ({ id: p.id, lat: p.lat, lng: p.lng, count: i + 1, label: p.name }))} zoom={9} className="h-[190px] rounded-[18px]" />
+          <MemoryMap pins={route.map((p, i) => ({ id: p.id, lat: p.lat, lng: p.lng, count: i + 1, label: p.name }))} zoom={9} className="h-[190px] rounded-[18px] wide:h-[260px]" />
         </section>
 
         {highlights.length > 0 && (
@@ -105,6 +107,24 @@ export default async function PublicTripPage({ params }: { params: Promise<{ id:
             </ul>
           </section>
         )}
+
+      </div>
+
+      <div className="mt-5 min-w-0 space-y-5 wide:mt-0">
+        {/* phone: pinned to the bottom of the screen · wide: a card at the top of this column */}
+        <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-w-[430px] items-center gap-2 border-t border-line bg-card px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 wide:static wide:max-w-none wide:rounded-[18px] wide:border-0 wide:px-3 wide:py-2 wide:shadow-card">
+          <form action={toggleLike.bind(null, id, !myLike)}>
+            <button aria-pressed={Boolean(myLike)} className="flex min-h-[44px] items-center gap-1.5 px-2 text-[13px] font-bold text-ink">
+              <span className={myLike ? "text-coral" : "text-muted"}>{myLike ? "♥" : "♡"}</span>{likes ?? 0}
+            </button>
+          </form>
+          <form action={toggleSave.bind(null, id, !mySave)}>
+            <button aria-pressed={Boolean(mySave)} className="min-h-[44px] px-3 text-[13px] font-bold text-deep">{mySave ? "Saved" : "Save"}</button>
+          </form>
+          {user.id !== authorId && (
+            <Link href={`/messages/${authorId}`} className="ml-auto flex min-h-[44px] items-center rounded-full bg-deep px-5 text-[13px] font-bold text-white">Message {shortName(a.name)}</Link>
+          )}
+        </div>
 
         {spend && (
           <section className="rounded-[18px] bg-card p-5 shadow-card">
@@ -132,19 +152,6 @@ export default async function PublicTripPage({ params }: { params: Promise<{ id:
           </form>
         )}
       </div>
-
-      <div className="fixed inset-x-0 bottom-0 mx-auto flex max-w-[430px] lg:sticky lg:max-w-none items-center gap-2 border-t border-line bg-card px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-        <form action={toggleLike.bind(null, id, !myLike)}>
-          <button aria-pressed={Boolean(myLike)} className="flex min-h-[44px] items-center gap-1.5 px-2 text-[13px] font-bold text-ink">
-            <span className={myLike ? "text-coral" : "text-muted"}>{myLike ? "♥" : "♡"}</span>{likes ?? 0}
-          </button>
-        </form>
-        <form action={toggleSave.bind(null, id, !mySave)}>
-          <button aria-pressed={Boolean(mySave)} className="min-h-[44px] px-3 text-[13px] font-bold text-deep">{mySave ? "Saved" : "Save"}</button>
-        </form>
-        {user.id !== authorId && (
-          <Link href={`/messages/${authorId}`} className="ml-auto flex min-h-[44px] items-center rounded-full bg-deep px-5 text-[13px] font-bold text-white">Message {shortName(a.name)}</Link>
-        )}
       </div>
     </main>
   );

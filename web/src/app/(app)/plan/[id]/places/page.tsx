@@ -56,9 +56,11 @@ export default async function PlacesPage({ params, searchParams }: { params: Pro
   const next = (members ?? 1) > 1 ? `/plan/${id}/board` : `/plan/${id}/build`;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href={`/plan/${id}/setup`} title="Your must-visit places" subtitle="Add them first — Ato plans the days around them" />
-      <div className="px-6">
+      {/* wide: search and your list on the left; Ato's suggestions and "next" on the right */}
+      <div className="px-6 wide:grid wide:grid-cols-2 wide:items-start wide:gap-8">
+        <div className="min-w-0">
         <form role="search" className="flex gap-2">
           <input name="q" defaultValue={q} placeholder="Search a place, or paste a link" aria-label="Search a place"
             className="h-[48px] flex-1 rounded-full border-[1.5px] border-coral bg-card px-5 text-[13.5px] focus:outline-none focus:ring-[3px] focus:ring-coral/30" />
@@ -124,7 +126,9 @@ export default async function PlacesPage({ params, searchParams }: { params: Pro
           ))}
         </ol>
 
-        <h2 className="mb-1 mt-6 text-[11px] font-bold text-ink">Ato suggests</h2>
+        </div>
+        <div className="min-w-0">
+        <h2 className="mb-1 mt-6 text-[11px] font-bold text-ink wide:mt-0">Ato suggests</h2>
         <p className="mb-2 text-[11px] text-muted">From your Travel DNA — tap ＋ to add. Real places near {trip.name}.</p>
         <Suspense fallback={<p className="text-[11.5px] text-muted">Looking around {trip.name}…</p>}>
           <Suggestions tripId={id} lat={trip.dest_lat} lng={trip.dest_lng} interests={interests} taken={stops.map((s) => s.name.toLowerCase())} />
@@ -136,6 +140,7 @@ export default async function PlacesPage({ params, searchParams }: { params: Pro
           {trip.owner_id === user.id || (members ?? 1) > 1
             ? <Link href={next} className={buttonClass("primary")}>{(members ?? 1) > 1 ? "See group preferences" : "Build my itinerary"}</Link>
             : null}
+        </div>
         </div>
       </div>
     </main>

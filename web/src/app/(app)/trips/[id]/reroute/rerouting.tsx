@@ -27,7 +27,7 @@ export function Rerouting({ tripId, tripName, daysLeft }: { tripId: string; trip
   }, [tripId, router]);
   const pct = Math.round(((step + 1) / STEPS.length) * 100);
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col bg-gradient-to-b from-[#17707a] to-deeper px-8 pb-10 pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
+    <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col bg-gradient-to-b from-[#17707a] to-deeper px-8 pb-10 wide:max-w-none wide:px-[max(2rem,calc(50%-240px))] pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
       <div className="flex justify-end"><Link href={`/trips/${tripId}`} className="min-h-[40px] content-center text-[13px] font-bold text-[#bfe4e0]">Cancel</Link></div>
       <div className="mt-12 flex flex-col items-center">
         <Ato size={140} />

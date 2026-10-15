@@ -63,7 +63,7 @@ export default async function HomePage() {
                 <p className="text-[11.5px] text-muted">{count(trips.length, "trip")}, {count(memories, "memory", "memories")}</p>
               </div>
               <Link href="/add" aria-label="Add a memory"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-coral shadow-fab transition-transform active:scale-95 lg:hidden">
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-coral shadow-fab transition-transform active:scale-95 wide:hidden">
                 <svg width="20" height="20" viewBox="0 0 22 22" aria-hidden><path d="M11 4v14M4 11h14" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" /></svg>
               </Link>
             </div>

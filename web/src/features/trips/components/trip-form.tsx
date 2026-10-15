@@ -45,7 +45,9 @@ export function TripForm({ friends, members = [], initial }: { friends: Person[]
   }, [state.id, cover, router]);
 
   return (
-    <form action={formAction} className="space-y-4">
+    // wide: the trip itself on the left; who travels and who can see it on the right
+    <form action={formAction} className="space-y-4 wide:grid wide:grid-cols-2 wide:items-start wide:gap-8 wide:space-y-0">
+      <div className="min-w-0 space-y-4">
       <label className="relative flex h-36 cursor-pointer items-center justify-center overflow-hidden rounded-[20px] border-2 border-dashed border-line bg-surface">
         {preview
           ? <img src={preview} alt="Trip cover" className="absolute inset-0 h-full w-full object-cover" />
@@ -62,6 +64,9 @@ export function TripForm({ friends, members = [], initial }: { friends: Person[]
         <Field label="End" name="end_date" type="date" defaultValue={initial?.end_date ?? ""} />
       </div>
       <Field label="Budget for the whole trip (RM, optional)" name="budget" inputMode="decimal" placeholder="3000" defaultValue={initial?.budget ?? ""} />
+      </div>
+
+      <div className="min-w-0 space-y-4">
 
       <fieldset>
         <legend className="mb-1 text-[11px] font-bold text-ink">Travel with</legend>
@@ -103,6 +108,7 @@ export function TripForm({ friends, members = [], initial }: { friends: Person[]
 
       <FormMessage error={state.error} message={uploading ? "Uploading your cover…" : undefined} />
       <Submit pending="Saving…">{initial ? "Save trip" : "Create trip"}</Submit>
+      </div>
     </form>
   );
 }

@@ -6,6 +6,7 @@ import { DemoLocked } from "@/components/demo-notice";
 import { requireUser } from "@/features/auth/guards";
 import { getTrip } from "@/features/trips/data";
 import { PersonLink } from "@/components/ui";
+import { TWO_COLUMNS } from "@/lib/layout";
 
 /** 21 Trip members, with the owner's ••• menu and the leave confirmation. */
 export default async function MembersPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ confirm?: string; locked?: string; reminded?: string }> }) {
@@ -19,7 +20,7 @@ export default async function MembersPage({ params, searchParams }: { params: Pr
 
   if (confirm === "leave" && t.isMember && !t.isOwner) {
     return (
-      <main className="mx-auto grid min-h-dvh max-w-[430px] place-items-center lg:max-w-none bg-deeper/90 px-8">
+      <main className="mx-auto grid min-h-dvh max-w-[430px] place-items-center wide:max-w-none bg-deeper/90 px-8">
         <div className="w-full max-w-[400px] rounded-[26px] bg-card p-6 text-center shadow-sheet">
           <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#a33a221f] text-[24px] font-bold text-coral-dark">!</div>
           <h1 className="mt-4 text-[21px] font-bold text-ink">Leave {t.trip.name}?</h1>
@@ -45,10 +46,10 @@ export default async function MembersPage({ params, searchParams }: { params: Pr
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href={`/trips/${id}`} title={`${t.trip.name} members`} subtitle={`${joined.length} people, ${t.photoCount} memories`} />
       {locked && <DemoLocked />}
-      <div className="space-y-3 px-6">
+      <div className={`space-y-3 px-6 ${TWO_COLUMNS}`}>
         <h2 className="text-[11px] font-bold text-ink">Members</h2>
         {joined.map((m) => (
           <div key={m.user_id} className="flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">

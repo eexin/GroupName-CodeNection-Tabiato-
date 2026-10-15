@@ -1,6 +1,23 @@
 @import "tailwindcss";
 
 /*
+ * Layout modes (docs/ARCHITECTURE.md → "Screen sizes"):
+ *   (none)  phone held upright — the 430px column, bottom nav
+ *   wide:   room for two columns — a computer (1024px+) OR a phone or tablet turned sideways
+ *   land:   turned sideways but under 1024px (phones, small tablets) — the sidebar becomes an icon rail
+ *           and tall pictures shrink, since a phone on its side is only ~390px tall
+ *   desk:   only a computer — the full sidebar
+ * Keep WIDE_QUERY in src/lib/layout.ts in step with `wide`.
+ */
+@custom-variant wide {
+  @media (min-width: 1024px), (min-width: 560px) and (orientation: landscape) {
+    @slot;
+  }
+}
+@custom-variant land (@media (min-width: 560px) and (max-width: 1023.98px) and (orientation: landscape));
+@custom-variant desk (@media (min-width: 1024px));
+
+/*
  * Water World design tokens — mirrored from the Figma "Water World" variable collection.
  * Change a colour here and it changes everywhere; never hard-code hex values in components.
  */

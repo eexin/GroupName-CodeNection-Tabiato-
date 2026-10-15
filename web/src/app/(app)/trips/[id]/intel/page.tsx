@@ -7,6 +7,7 @@ import { requireUser } from "@/features/auth/guards";
 import { travelAdvice, travelNews } from "@/features/live/intel";
 import { looksRelevant } from "@/features/live/news-filter";
 import { money, myr } from "@/lib/currency";
+import { TWO_COLUMNS } from "@/lib/layout";
 
 export const maxDuration = 60;
 
@@ -30,7 +31,7 @@ export default async function IntelPage({ params, searchParams }: { params: Prom
   if (!trip) notFound();
   if (!trip.country_code) {
     return (
-      <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4">
+      <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
         <BackHeader href={`/trips/${id}`} title="Trip intel" />
         <Empty title="No destination yet">Give this trip a destination and I&apos;ll pull official travel advice and news for it.</Empty>
       </main>
@@ -67,9 +68,9 @@ Never invent rules or dates. Return JSON {"advice_note": string, "news": [{"i": 
   const finished = trip.status === "finished";
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href={`/trips/${id}`} title="Trip intel" subtitle={`${country} · official advice and recent news`} />
-      <div className="space-y-4 px-6">
+      <div className={`space-y-4 px-6 ${TWO_COLUMNS}`}>
         <nav aria-label="Topics" className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
           {TABS.map(([k, label]) => (
             <Link key={k} href={`/trips/${id}/intel${k === "all" ? "" : `?tab=${k}`}`} aria-current={tab === k ? "page" : undefined}

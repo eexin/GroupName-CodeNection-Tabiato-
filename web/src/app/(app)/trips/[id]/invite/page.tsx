@@ -38,9 +38,11 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
   ];
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 lg:max-w-2xl lg:pt-4">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href={`/trips/${id}/members`} title={`Invite to ${trip.name}`} />
-      <div className="space-y-4 px-6">
+      {/* wide: search and the invite link on the left; your friends on the right */}
+      <div className="px-6 wide:grid wide:grid-cols-2 wide:items-start wide:gap-8">
+        <div className="min-w-0 space-y-4">
         <form role="search">
           <input name="q" defaultValue={q} placeholder="Search friends or email" aria-label="Search friends or email"
             className="h-[46px] w-full rounded-full border border-line bg-card px-5 text-[13.5px] placeholder:text-muted focus:border-coral focus:outline-none" />
@@ -52,7 +54,9 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
           </div>
           <CopyButton text={link} />
         </div>
-        <h2 className="pt-2 text-[11px] font-bold text-ink">Your friends</h2>
+        </div>
+        <div className="mt-4 min-w-0 space-y-4 wide:mt-0">
+        <h2 className="pt-2 text-[11px] font-bold text-ink wide:pt-0">Your friends</h2>
         {list.length === 0 && (
           <p className="text-[12.5px] text-muted">{term ? `No one matches “${term}”. Search by full email to invite someone who isn't a friend yet.` : <>No friends yet — <Link href="/friends/add" className="font-bold text-coral">add one</Link>, or share the link above.</>}</p>
         )}
@@ -73,6 +77,7 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
           })}
         </ul>
         <Link href={`/trips/${id}/members`} className={`${buttonClass("quiet")} mt-4`}>Done</Link>
+        </div>
       </div>
     </main>
   );

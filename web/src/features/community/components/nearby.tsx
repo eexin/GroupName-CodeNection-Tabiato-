@@ -60,7 +60,7 @@ export function NearbyChip({ active }: { active: boolean }) {
         </span>
       </button>
       {error && (
-        <p role="alert" className="fixed inset-x-0 bottom-[calc(92px+env(safe-area-inset-bottom))] z-40 mx-auto w-[calc(100%-2.5rem)] max-w-[390px] rounded-[14px] bg-deep px-4 py-3 text-[12.5px] leading-snug text-white shadow-sheet lg:bottom-6">
+        <p role="alert" className="fixed inset-x-0 bottom-[calc(92px+env(safe-area-inset-bottom))] z-40 mx-auto w-[calc(100%-2.5rem)] max-w-[390px] rounded-[14px] bg-deep px-4 py-3 text-[12.5px] leading-snug text-white shadow-sheet wide:bottom-6">
           {error}
         </p>
       )}

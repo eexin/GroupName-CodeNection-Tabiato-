@@ -32,7 +32,7 @@ export default async function OptionsPage({ params, searchParams }: { params: Pr
 
   if (confirm === "delete" && owner) {
     return (
-      <main className="mx-auto grid min-h-dvh max-w-[430px] place-items-center lg:max-w-none bg-deeper/90 px-8">
+      <main className="mx-auto grid min-h-dvh max-w-[430px] place-items-center wide:max-w-none bg-deeper/90 px-8">
         <div className="w-full max-w-[400px] rounded-[26px] bg-card p-6 text-center shadow-sheet">
           <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#c94a2c1f] text-[24px] text-coral-dark">!</div>
           <h1 className="mt-4 text-[21px] font-bold text-ink">Delete {trip.name}?</h1>
@@ -51,7 +51,7 @@ export default async function OptionsPage({ params, searchParams }: { params: Pr
 
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] wide:max-w-2xl wide:pt-4 pb-10">
       <BackHeader href={`/trips/${id}`} title={trip.name} subtitle={`${photos ?? 0} memories, ${places ?? 0} places`} />
       {locked && <DemoLocked />}
       <ul className="mx-6 divide-y divide-line rounded-[18px] bg-card shadow-card">

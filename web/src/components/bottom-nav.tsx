@@ -28,7 +28,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px] border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px] border-t border-line bg-card pb-[env(safe-area-inset-bottom)] wide:hidden"
     >
       <ul className="grid grid-cols-4">
         {TABS.map((tab) => {

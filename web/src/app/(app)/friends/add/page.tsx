@@ -62,9 +62,11 @@ export default async function AddFriendPage({ searchParams }: { searchParams: Pr
   };
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href="/friends" title="Add friend" />
-      <div className="px-6">
+      {/* wide: find someone on the left; people waiting on you and people you travelled with on the right */}
+      <div className="px-6 wide:grid wide:grid-cols-2 wide:items-start wide:gap-8">
+        <div className="min-w-0">
         <form role="search">
           <input name="q" defaultValue={q} placeholder="Name, email or @username" aria-label="Find someone by name, email or username"
             className="h-[50px] w-full rounded-full border-[1.5px] border-coral bg-card px-5 text-[14px] placeholder:text-muted focus:outline-none focus:ring-[3px] focus:ring-coral/30" />
@@ -94,6 +96,8 @@ export default async function AddFriendPage({ searchParams }: { searchParams: Pr
           </section>
         )}
 
+        </div>
+        <div className="min-w-0 wide:[&>*:first-child]:mt-0">
         {(() => {
           const asking = [...status.entries()].filter(([, v]) => v === "Sent you a request").map(([k]) => k);
           return asking.length > 0 && !term ? <AskingRows ids={asking} /> : null;
@@ -108,6 +112,7 @@ export default async function AddFriendPage({ searchParams }: { searchParams: Pr
 
         <div className="mt-6"><AtoNote label="Why add friends?">Friends can add their own photos to your trips, so one map holds everything.</AtoNote></div>
         <p className="mt-4 text-center text-[11px] text-muted">Nothing is shared until you invite them to a trip.</p>
+        </div>
       </div>
     </main>
   );

@@ -18,7 +18,7 @@ export default async function TripsPage({ searchParams }: { searchParams: Promis
   const list = all.filter((t) => (planned ? t.trip.status === "planned" : t.trip.status !== "planned"));
 
   return (
-    <main className="px-6 pt-[max(1.5rem,env(safe-area-inset-top))] lg:mx-auto lg:max-w-5xl lg:px-10 lg:pt-8">
+    <main className="px-6 pt-[max(1.5rem,env(safe-area-inset-top))] wide:mx-auto wide:max-w-5xl wide:px-10 wide:pt-8">
       <header className="flex items-center justify-between pt-2">
         <h1 className="text-[24px] font-bold text-ink">Trips</h1>
         <Link href="/search" aria-label="Search your memories" className="grid h-10 w-10 place-items-center">
@@ -59,7 +59,7 @@ export default async function TripsPage({ searchParams }: { searchParams: Promis
       )}
       {planned && list.length > 0 && <h2 className="mt-5 text-[11px] font-bold text-muted">UPCOMING</h2>}
       {list.length ? (
-        <ul className="mt-5 space-y-4 pb-8 lg:grid lg:grid-cols-2 lg:gap-5 lg:space-y-0 xl:grid-cols-3">{list.map((t) => <li key={t.trip.id}><TripCard s={t} /></li>)}</ul>
+        <ul className="mt-5 space-y-4 pb-8 wide:grid wide:grid-cols-2 wide:gap-5 wide:space-y-0 xl:grid-cols-3">{list.map((t) => <li key={t.trip.id}><TripCard s={t} /></li>)}</ul>
       ) : planned ? (
         <Empty title="Nothing planned yet">Plan your next trip with Ato — add the places you&apos;d hate to miss and it builds the days around them.</Empty>
       ) : (

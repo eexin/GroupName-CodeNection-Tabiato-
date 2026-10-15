@@ -19,7 +19,7 @@ export default async function UploadPage({ params }: { params: Promise<{ id: str
   if (me?.status !== "joined" || me.role === "viewer" || trip.status === "planned") redirect(`/trips/${id}`);
   const { data: profile } = await supabase.from("profiles").select("settings").eq("id", user.id).single();
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-4xl wide:pt-4">
       <BackHeader href={`/trips/${id}`} title="Add photos" subtitle={trip.name} />
       <Uploader tripId={id} tripName={trip.name} userId={user.id} autoPin={profile?.settings?.auto_pin !== false}
         members={(t?.members ?? []).filter((m) => m.status === "joined").map((m) => m.person)} currency={currencyForCountry(trip.country_code)}

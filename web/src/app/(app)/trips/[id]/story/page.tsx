@@ -32,28 +32,29 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
   const sub = [facts.totals.days ? `${facts.totals.days} days` : null, month, others.length ? `with ${others.join(", ")}` : null].filter(Boolean).join(" · ");
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href={`/trips/${id}`} title="Trip story" subtitle={formatRange(t.trip.start_date, t.trip.end_date)}
         right={t.trip.is_public
           ? <ShareButton path={`/trips/${id}/story`} title={`${t.trip.name} — a Tabiato trip story`} className="bg-coral text-white" />
           : t.isOwner ? <Link href={`/trips/${id}/share`} className="text-[11.5px] font-bold text-coral">Make public to share</Link> : null} />
-      <div className="space-y-5 px-6">
-        <section>
+      {/* wide: the route on the left; highlights, spend and the book on the right */}
+      <div className="space-y-5 px-6 wide:grid wide:grid-cols-2 wide:items-start wide:gap-x-8 wide:gap-y-5 wide:space-y-0 wide:[grid-template-areas:'title_title'_'route_high'_'route_spend'_'route_book'] wide:[grid-template-rows:auto_auto_auto_1fr]">
+        <section className="wide:[grid-area:title]">
           <p className="text-[10.5px] font-bold text-coral">TRIP STORY</p>
           <h1 className="text-[26px] font-bold leading-tight text-ink">{t.trip.name}</h1>
           <p className="text-[12px] text-muted">{sub}</p>
         </section>
 
-        <section>
+        <section className="wide:[grid-area:route]">
           <h2 className="mb-2 text-[11px] font-bold text-ink">The route</h2>
-          <MemoryMap pins={route.map((p, i) => ({ id: p.id, lat: p.lat, lng: p.lng, count: i + 1, label: p.name }))} zoom={10} className="h-[200px] rounded-[18px]" />
+          <MemoryMap pins={route.map((p, i) => ({ id: p.id, lat: p.lat, lng: p.lng, count: i + 1, label: p.name }))} zoom={10} className="h-[200px] rounded-[18px] wide:h-[340px] land:h-[220px]" />
           <ol className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-body">
             {route.map((p, i) => <li key={p.id}>{i + 1}. {p.name}{i < route.length - 1 ? " →" : ""}</li>)}
           </ol>
         </section>
 
         {highlights.length > 0 && (
-          <section>
+          <section className="wide:[grid-area:high]">
             <h2 className="mb-2 text-[11px] font-bold text-ink">Highlights</h2>
             <ul className="grid grid-cols-3 gap-2">
               {highlights.map((p) => (
@@ -70,7 +71,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         )}
 
         {facts.totals.spend > 0 && t.isMember && (
-          <section className="rounded-[18px] bg-card p-5 shadow-card">
+          <section className="rounded-[18px] bg-card p-5 shadow-card wide:[grid-area:spend]">
             <h2 className="text-[11px] font-bold text-ink">Spend</h2>
             <p className="mt-1 text-[24px] font-bold text-deep">RM {facts.totals.spend.toFixed(0)}</p>
             <div className="mt-3 flex h-2.5 overflow-hidden rounded-full" aria-hidden>
@@ -81,7 +82,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
         )}
 
         {t.isMember && (
-          <Link href={`/trips/${id}/book`} className="flex items-center gap-3 rounded-[20px] bg-gradient-to-br from-[#12666e] to-deeper p-5 shadow-card">
+          <Link href={`/trips/${id}/book`} className="flex items-center gap-3 rounded-[20px] wide:[grid-area:book] bg-gradient-to-br from-[#12666e] to-deeper p-5 shadow-card">
             <span className="min-w-0 flex-1">
               <span className="block text-[15px] font-bold text-white">{t.hasBook ? "Your memory book is ready" : "Write your memory book"}</span>
               <span className="mt-1 block text-[11px] text-[#bfe4e0]">

@@ -29,9 +29,11 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
   const owner = trip.owner_id === user.id;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href={`/plan/${id}/places`} title="Preference board" subtitle={`${people.length} travellers — ${owner ? "you" : "the trip leader"} make${owner ? "" : "s"} the final call`} />
-      <div className="space-y-3 px-6">
+      {/* wide: everyone's preferences on the left; where you differ and the decision on the right */}
+      <div className="px-6 wide:grid wide:grid-cols-2 wide:items-start wide:gap-8">
+        <div className="min-w-0 space-y-3">
         {people.map((p) => (
           <div key={p.id} className="flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">
             <PersonLink id={p.id} className="flex min-w-0 flex-1 items-center gap-3">
@@ -49,7 +51,9 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
           </div>
         ))}
 
-        {conflicts.length > 0 && <h2 className="pt-3 text-[11px] font-bold text-ink">Where you differ</h2>}
+        </div>
+        <div className="mt-3 min-w-0 space-y-3 wide:mt-0">
+        {conflicts.length > 0 && <h2 className="pt-3 text-[11px] font-bold text-ink wide:pt-0">Where you differ</h2>}
         {conflicts.map((c) => (
           <div key={c.title} className={`rounded-[14px] border-l-4 px-4 py-3 ${c.title === "Shared interests" ? "border-aqua bg-surface" : "border-sand bg-[#fff3e2]"}`}>
             <p className="text-[12.5px] font-bold text-ink">{c.title}</p>
@@ -61,6 +65,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
         {owner
           ? <Link href={`/plan/${id}/build`} className={`${buttonClass("primary")} mt-2`}>Confirm itinerary</Link>
           : <p className="pt-2 text-center text-[12px] text-muted">Waiting for the trip leader to confirm.</p>}
+        </div>
       </div>
     </main>
   );

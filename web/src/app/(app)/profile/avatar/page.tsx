@@ -16,7 +16,7 @@ export default async function DressUpPage({ searchParams }: { searchParams: Prom
   const initial = current ?? decodeLook(profile.settings?.look) ?? lookFromSeed(user.id);
   const usingPhoto = Boolean(profile.avatar_url && !current);
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:pt-4">
+    <main className="mx-auto min-h-dvh max-w-[430px] wide:max-w-4xl wide:pt-4">
       <BackHeader href={next} title="Dress up" subtitle="Everything here is free. Mix and match." />
       <DressUp initial={initial} usingPhoto={usingPhoto} next={next} />
     </main>

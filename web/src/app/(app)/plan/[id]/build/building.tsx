@@ -32,7 +32,7 @@ export function Building({ tripId, name, days }: { tripId: string; name: string;
   }, [tripId, router]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col items-center bg-gradient-to-b from-[#17707a] to-deeper px-8 pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
+    <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col items-center bg-gradient-to-b from-[#17707a] to-deeper wide:max-w-none px-8 pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
       <div className="flex w-full justify-end"><Link href={`/plan/${tripId}`} className="min-h-[40px] content-center text-[13px] font-bold text-[#bfe4e0]">Cancel</Link></div>
       <div className="mt-12"><Ato size={140} /></div>
       <h1 className="mt-6 text-center text-[24px] font-bold leading-tight">Ato is planning<br /><span className="text-sand">{days} days in {name}</span></h1>

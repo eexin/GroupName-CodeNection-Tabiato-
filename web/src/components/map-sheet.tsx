@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LinkedMap } from "@/components/map-links";
 import type { Pin } from "@/components/memory-map";
+import { WIDE_QUERY } from "@/lib/layout";
 
 /** Height of the map once the sheet has been pulled all the way up (header plus a strip of map). */
 const COLLAPSED = 220;
@@ -15,7 +16,7 @@ const OVERLAP = 28;
  * narrows around its centre until only a strip is left, then the list scrolls under that strip.
  * Plain page scrolling drives it, so it works with touch, wheel, keyboard and screen readers.
  * Once the scroll settles, the pins are re-framed inside whatever is still visible.
- * On a computer (lg) it is the usual side-by-side layout and none of this runs.
+ * On a computer or a phone turned sideways (wide) it is the usual side-by-side layout and none of this runs.
  */
 export function MapSheet({ pins, dim, header, children }: { pins: Pin[]; dim?: boolean; header: React.ReactNode; children: React.ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
@@ -27,7 +28,7 @@ export function MapSheet({ pins, dim, header, children }: { pins: Pin[]; dim?: b
     const el = win.current;
     const host = root.current;
     if (!el || !host) return;
-    const wide = window.matchMedia("(min-width: 1024px)");
+    const wide = window.matchMedia(WIDE_QUERY);
     let full = 0;
     let raf = 0;
     let idle: number | undefined;
@@ -73,16 +74,16 @@ export function MapSheet({ pins, dim, header, children }: { pins: Pin[]; dim?: b
   }, []);
 
   return (
-    <div ref={root} className="relative [--map-full:62svh] lg:grid lg:h-dvh lg:grid-cols-[minmax(0,1fr)_420px]">
+    <div ref={root} className="relative [--map-full:62svh] wide:grid wide:h-dvh wide:grid-cols-[minmax(0,1fr)_420px]">
       <div ref={win} data-collapsed="false"
-        className="group fixed inset-x-0 top-0 z-0 mx-auto h-[var(--map-full)] max-w-[430px] overflow-hidden data-[collapsed=true]:z-20 data-[collapsed=true]:rounded-b-[24px] data-[collapsed=true]:shadow-card lg:sticky lg:z-0 lg:mx-0 lg:h-dvh lg:max-w-none lg:rounded-none lg:shadow-none">
+        className="group fixed inset-x-0 top-0 z-0 mx-auto h-[var(--map-full)] max-w-[430px] overflow-hidden data-[collapsed=true]:z-20 data-[collapsed=true]:rounded-b-[24px] data-[collapsed=true]:shadow-card wide:sticky wide:z-0 wide:mx-0 wide:h-dvh wide:max-w-none wide:rounded-none wide:shadow-none">
         {/* full-size map, slid up by half of what has been cropped so the centre stays in view */}
-        <div className="absolute inset-x-0 h-[var(--map-full)] lg:h-full" style={{ top: "calc(-1 * var(--crop, 0px))" }}>
+        <div className="absolute inset-x-0 h-[var(--map-full)] wide:h-full" style={{ top: "calc(-1 * var(--crop, 0px))" }}>
           <LinkedMap pins={pins} base="/trips" attribution={false} fitInset={inset} className={`absolute inset-0 ${dim ? "opacity-60" : ""}`} />
         </div>
-        <div ref={head} className="absolute inset-x-0 top-0 z-10 lg:hidden">{header}</div>
+        <div ref={head} className="absolute inset-x-0 top-0 z-10 wide:hidden">{header}</div>
         {/* the OSM credit is a licence requirement, so it sits where the sheet never covers it */}
-        <p className="absolute bottom-[calc(28px+6px)] right-2 z-10 rounded-full bg-white/80 px-2 py-0.5 text-[9px] text-body group-data-[collapsed=true]:bottom-1.5 lg:bottom-2">
+        <p className="absolute bottom-[calc(28px+6px)] right-2 z-10 rounded-full bg-white/80 px-2 py-0.5 text-[9px] text-body group-data-[collapsed=true]:bottom-1.5 wide:bottom-2">
           © <a href="https://openfreemap.org" target="_blank" rel="noreferrer" className="underline">OpenFreeMap</a>{" "}
           © <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer" className="underline">OpenMapTiles</a>{" "}
           © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">OpenStreetMap</a>
@@ -90,8 +91,8 @@ export function MapSheet({ pins, dim, header, children }: { pins: Pin[]; dim?: b
       </div>
 
       <section aria-labelledby="trips-heading"
-        className="relative z-10 mt-[calc(var(--map-full)-28px)] min-h-[calc(100dvh-220px)] rounded-t-[28px] bg-paper px-6 pb-8 shadow-sheet lg:mt-0 lg:h-dvh lg:min-h-0 lg:overflow-y-auto lg:rounded-none lg:border-l lg:border-line lg:pt-4 lg:shadow-none">
-        <div aria-hidden className="mx-auto h-[5px] w-12 translate-y-[12px] rounded-full bg-[#c7dad7] lg:hidden" />
+        className="relative z-10 mt-[calc(var(--map-full)-28px)] min-h-[calc(100dvh-220px)] rounded-t-[28px] bg-paper px-6 pb-8 shadow-sheet wide:mt-0 wide:h-dvh wide:min-h-0 wide:overflow-y-auto wide:rounded-none wide:border-l wide:border-line wide:pt-4 wide:shadow-none">
+        <div aria-hidden className="mx-auto h-[5px] w-12 translate-y-[12px] rounded-full bg-[#c7dad7] wide:hidden" />
         {children}
       </section>
     </div>

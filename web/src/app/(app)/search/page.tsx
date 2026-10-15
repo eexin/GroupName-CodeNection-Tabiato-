@@ -19,11 +19,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const r = term.length >= 2 ? await searchMemories(supabase, user.id, term) : null;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href="/trips" title={r ? "Results" : "Search memories"} subtitle={r ? undefined : "Ask about anything you logged"}
-        right={r && r.hits.length ? <Link href={`/search?q=${encodeURIComponent(term)}${view === "map" ? "" : "&view=map"}`} className="min-h-[40px] content-center text-[12px] font-bold text-coral">{view === "map" ? "List view" : "Map view"}</Link> : null} />
+        right={r && r.hits.length ? <Link href={`/search?q=${encodeURIComponent(term)}${view === "map" ? "" : "&view=map"}`} className="min-h-[40px] content-center text-[12px] font-bold text-coral wide:hidden">{view === "map" ? "List view" : "Map view"}</Link> : null} />
       <div className="px-6">
-        <form role="search">
+        <form role="search" className="wide:max-w-2xl">
           <input name="q" defaultValue={q} placeholder="Ask anything about your trips" aria-label="Ask anything about your trips"
             className="h-[50px] w-full rounded-full border-[1.5px] border-coral bg-card px-5 text-[14px] placeholder:text-muted focus:outline-none focus:ring-[3px] focus:ring-coral/30" />
         </form>
@@ -32,7 +32,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           <>
             <div className="mt-4 flex items-center gap-3 text-[12px] text-muted"><Ato size={44} />Ask me in plain language.</div>
             <h2 className="mb-2 mt-6 text-[11px] font-bold text-ink">Try asking</h2>
-            <ul className="space-y-2">
+            <ul className="space-y-2 wide:grid wide:grid-cols-2 wide:gap-2 wide:space-y-0">
               {TRY.map((s) => (
                 <li key={s}><Link href={`/search?q=${encodeURIComponent(s)}`} className="block rounded-[14px] bg-card px-4 py-3 text-[13px] text-body shadow-card">{s}</Link></li>
               ))}
@@ -48,10 +48,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               </AtoNote>
             </div>
             <RememberSearch q={term} />
-            {view === "map" && (
-              <MemoryMap pins={searchPins(r.hits)} zoom={4} className="mt-4 h-[320px] rounded-[18px]" />
-            )}
-            <ul className="mt-4 space-y-2.5">
+            {/* phone: list or map · wide: the list with the map beside it */}
+            <div className="wide:mt-4 wide:grid wide:grid-cols-2 wide:items-start wide:gap-6">
+            <div className={`wide:sticky wide:top-4 wide:order-2 ${view === "map" ? "" : "hidden wide:block"}`}>
+              <MemoryMap pins={searchPins(r.hits)} zoom={4} className="mt-4 h-[320px] rounded-[18px] wide:mt-0 wide:h-[calc(100dvh-120px)] wide:max-h-[560px]" />
+            </div>
+            <ul className="mt-4 space-y-2.5 wide:mt-0">
               {r.hits.map((h) => (
                 <li key={h.id}>
                   <Link href={`/places/${h.id}`} className="flex items-center gap-3 rounded-[16px] bg-card px-4 py-3 shadow-card">
@@ -67,6 +69,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                 </li>
               ))}
             </ul>
+            </div>
           </>
         ) : (
           <>

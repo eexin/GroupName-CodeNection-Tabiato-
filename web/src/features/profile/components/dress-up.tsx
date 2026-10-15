@@ -59,16 +59,18 @@ export function DressUp({ initial, usingPhoto, next }: { initial: Look; usingPho
   const options = slot ? [undefined, ...Object.keys(ITEMS).filter((k) => ITEMS[k].slot === slot)] : [];
 
   return (
-    <div className="pb-[calc(96px+env(safe-area-inset-bottom))]">
-      <section className="mx-6 rounded-[24px] bg-gradient-to-b from-[#17707a] to-deeper px-5 pb-5 pt-4 text-white">
-        <Figure look={look} view="full" className="mx-auto h-[220px] w-[184px]" />
+    <div className="pb-[calc(96px+env(safe-area-inset-bottom))] wide:grid wide:grid-cols-[minmax(0,300px)_minmax(0,1fr)] wide:items-start wide:gap-6 wide:px-6 wide:pb-10">
+      {/* wide: the character stays in view on the left while you pick on the right */}
+      <section className="mx-6 rounded-[24px] wide:sticky wide:top-4 wide:mx-0 bg-gradient-to-b from-[#17707a] to-deeper px-5 pb-5 pt-4 text-white">
+        <Figure look={look} view="full" className="mx-auto h-[220px] w-[184px] land:h-[160px] land:w-[134px]" />
         <div className="mt-3 flex items-end gap-2">
           <Ato size={54} mood="happy" />
           <p role="status" className="relative flex-1 rounded-[16px] rounded-bl-[4px] bg-card px-3.5 py-2.5 text-[12.5px] leading-snug text-ink">{line}</p>
         </div>
       </section>
 
-      <nav aria-label="What to change" className="mt-4 flex gap-2 overflow-x-auto px-6 pb-1 no-scrollbar">
+      <div className="min-w-0">
+      <nav aria-label="What to change" className="mt-4 wide:mt-0 flex gap-2 overflow-x-auto px-6 pb-1 no-scrollbar">
         {TABS.map((t) => (
           <button key={t} type="button" onClick={() => setTab(t)} aria-pressed={tab === t}
             className={`min-h-[40px] shrink-0 whitespace-nowrap rounded-full px-4 text-[12.5px] ${tab === t ? "bg-deep font-bold text-white" : "border border-line bg-card text-body"}`}>
@@ -77,7 +79,7 @@ export function DressUp({ initial, usingPhoto, next }: { initial: Look; usingPho
         ))}
       </nav>
 
-      <div className="mt-4 px-6">
+      <div className="mt-4 px-6 wide:px-0">
         {slot === null ? (
           <div className="space-y-5">
             {swatches("Skin tone", SKINS, SKIN_NAMES, look.skin, (i) => setLook((l) => ({ ...l, skin: i })))}
@@ -106,11 +108,12 @@ export function DressUp({ initial, usingPhoto, next }: { initial: Look; usingPho
         {error && <p role="alert" className="mt-3 text-[12px] font-bold text-coral">{error}</p>}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-paper/95 px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:sticky lg:mt-6 lg:border-0 lg:bg-transparent">
-        <div className="mx-auto flex max-w-[430px] gap-3">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-paper/95 px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur wide:static wide:mt-6 wide:border-0 wide:bg-transparent wide:p-0 wide:backdrop-blur-none">
+        <div className="mx-auto flex max-w-[430px] gap-3 wide:mx-0 wide:max-w-md">
           <button type="button" onClick={() => { setLook(randomLook()); setLine(ATO_LINES.surprise); }} className={buttonClass("quiet", "flex-1")}>Surprise me</button>
           <button type="button" onClick={save} disabled={saving} className={buttonClass("primary", "flex-[1.4]")}>{saving ? "Saving…" : "Save my look"}</button>
         </div>
+      </div>
       </div>
     </div>
   );

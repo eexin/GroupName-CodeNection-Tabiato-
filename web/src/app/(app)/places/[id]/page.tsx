@@ -29,7 +29,7 @@ export default async function PlacePage({ params }: { params: Promise<{ id: stri
   const { data: me } = await supabase.from("profiles").select("settings").eq("id", user.id).single();
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 px-6 pb-28 pt-[max(1.25rem,env(safe-area-inset-top))]">
+    <main className="mx-auto min-h-dvh max-w-[430px] px-6 pb-28 pt-[max(1.25rem,env(safe-area-inset-top))] wide:max-w-5xl wide:pb-10 wide:pt-4">
       <div className="flex items-start gap-3">
         <Link href={`/trips/${trip.id}`} aria-label="Back to trip" className="-ml-2 grid h-10 w-10 shrink-0 place-items-center">
           <svg width="12" height="14" viewBox="0 0 12 14" aria-hidden><path d="M9 13 3 7 9 1" fill="none" stroke="#12312F" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -41,11 +41,13 @@ export default async function PlacePage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      <div className="mt-4"><Photos photos={d.photos} where={[place.name, trip.destination].filter(Boolean).join(", ")} /></div>
+      {/* phone: photos, your part, comments · wide: photos and comments on the left, your part on the right */}
+      <div className="grid [grid-template-areas:'photos'_'mine'_'talk'] wide:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] wide:items-start wide:gap-x-8 wide:[grid-template-areas:'photos_mine'_'talk_mine']">
+      <div className="mt-4 [grid-area:photos]"><Photos photos={d.photos} where={[place.name, trip.destination].filter(Boolean).join(", ")} /></div>
 
       {d.isMember && (
-        <>
-          <div className="mb-2 mt-6 flex items-baseline justify-between gap-3">
+        <div className="[grid-area:mine] wide:mt-4">
+          <div className="mb-2 mt-6 flex wide:mt-0 items-baseline justify-between gap-3">
             <h2 className="text-[11px] font-bold text-ink">Spent here</h2>
             <Link href={`/trips/${trip.id}/money`} className="text-[11px] font-bold text-coral">Trip money</Link>
           </div>
@@ -85,9 +87,10 @@ export default async function PlacePage({ params }: { params: Promise<{ id: stri
               <strong className="block text-[11px] text-ink">{n.by}</strong>{n.body}
             </p>
           ))}
-        </>
+        </div>
       )}
 
+      <section className="[grid-area:talk]">
       <Label>Comments {d.comments.length > 0 && <span className="font-normal text-muted">({d.comments.length})</span>}</Label>
       <ul className="space-y-3">
         {d.comments.map((c) => (
@@ -101,11 +104,14 @@ export default async function PlacePage({ params }: { params: Promise<{ id: stri
         {!d.comments.length && <li className="text-[12px] text-muted">No comments yet.</li>}
       </ul>
 
+      {/* phone: pinned to the bottom · wide: right under the comments, so it never covers anything */}
       {d.isMember && (
-        <div className="fixed inset-x-0 bottom-0 mx-auto max-w-[430px] lg:sticky lg:max-w-none bg-gradient-to-t from-paper via-paper to-transparent px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6">
+        <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[430px] bg-gradient-to-t from-paper via-paper to-transparent px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 wide:static wide:mt-4 wide:max-w-none wide:bg-none wide:p-0">
           <CommentForm placeId={place.id} tripId={trip.id} />
         </div>
       )}
+      </section>
+      </div>
     </main>
   );
 }

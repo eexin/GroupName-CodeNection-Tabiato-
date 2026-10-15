@@ -5,6 +5,7 @@ import { requireUser } from "@/features/auth/guards";
 import { HAZARD_LABEL, hazardsNear, type Hazard } from "@/features/live/hazards";
 import { hazardImpact, type TripRow } from "@/features/live/live";
 import { muteAlert } from "@/features/live/actions";
+import { TWO_COLUMNS } from "@/lib/layout";
 
 // n8n on a free host can take a while to wake up
 export const maxDuration = 60;
@@ -25,7 +26,7 @@ export default async function AlertPage({ params, searchParams }: { params: Prom
   const issued = h.from ? new Date(h.from).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) : "";
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <section className="bg-gradient-to-b from-[#c4681c] to-[#8e3f13] px-6 pb-7 pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
         <div className="flex items-center justify-between">
           <Link href={`/trips/${id}`} className="text-[13px] font-bold">‹ Travel alert</Link>
@@ -42,7 +43,7 @@ export default async function AlertPage({ params, searchParams }: { params: Prom
         <p className="mt-2 text-[12.5px] text-[#f5d3a8]">{HAZARD_LABEL[h.type] ?? h.type}{h.country ? `, ${h.country}` : ""} — about {h.km} km from {trip.name}</p>
       </section>
 
-      <div className="space-y-4 px-6 pt-5">
+      <div className={`space-y-4 px-6 pt-5 ${TWO_COLUMNS}`}>
         <div className="rounded-[20px] bg-card p-5 shadow-card">
           <p className="text-[10.5px] font-bold text-amber-ink">WHAT THIS CHANGES</p>
           {impact.outdoor.length ? (

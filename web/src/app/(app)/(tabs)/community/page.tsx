@@ -38,12 +38,12 @@ export default async function CommunityPage({ searchParams }: { searchParams: Pr
   );
 
   return (
-    <main className="px-6 pt-[max(1.5rem,env(safe-area-inset-top))] lg:mx-auto lg:max-w-5xl lg:px-10 lg:pt-8">
+    <main className="px-6 pt-[max(1.5rem,env(safe-area-inset-top))] wide:mx-auto wide:max-w-5xl wide:px-10 wide:pt-8">
       <header className="flex items-center justify-between pt-2">
         <h1 className="text-[24px] font-bold text-ink">Community</h1>
         <Ato size={52} />
       </header>
-      <nav aria-label="Filter" className="-mx-6 mt-4 flex gap-2 overflow-x-auto px-6 pb-1 lg:mx-0 lg:px-0 no-scrollbar">
+      <nav aria-label="Filter" className="-mx-6 mt-4 flex gap-2 overflow-x-auto px-6 pb-1 wide:mx-0 wide:px-0 no-scrollbar">
         {chip("foryou", "For you")}
         <NearbyChip active={filter === "nearby"} />
         {chip("budget", "Budget")}
@@ -53,7 +53,7 @@ export default async function CommunityPage({ searchParams }: { searchParams: Pr
       {destinations.length > 1 && (
         <section aria-labelledby="trending" className="mt-5">
           <h2 id="trending" className="text-[13px] font-bold text-ink">Trending destinations</h2>
-          <ul className="no-scrollbar -mx-6 mt-2 flex gap-3 overflow-x-auto px-6 pb-1 lg:mx-0 lg:px-0">
+          <ul className="no-scrollbar -mx-6 mt-2 flex gap-3 overflow-x-auto px-6 pb-1 wide:mx-0 wide:px-0">
             {destinations.map((d) => (
               <li key={d.name} className="shrink-0">
                 <Link href={`/community?dest=${encodeURIComponent(d.name)}`} className="relative block h-[104px] w-[136px] overflow-hidden rounded-[18px] shadow-card">
@@ -106,7 +106,7 @@ export default async function CommunityPage({ searchParams }: { searchParams: Pr
           {filter === "saved" ? "Tap the bookmark on any trip to keep it here." : filter === "budget" ? "No public trips have shared their spending yet." : "When someone shares a finished trip, it appears here with its real route and cost."}
         </Empty>
       ) : (
-        <ul className="mt-5 space-y-5 pb-8 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0 xl:grid-cols-3">
+        <ul className="mt-5 space-y-5 pb-8 wide:grid wide:grid-cols-2 wide:gap-6 wide:space-y-0 xl:grid-cols-3">
           {cards.map((c) => (
             <li key={c.trip.id} className="overflow-hidden rounded-[22px] bg-card shadow-card">
               <Link href={`/community/${c.trip.id}`} className="block">

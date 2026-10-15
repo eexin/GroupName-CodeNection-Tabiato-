@@ -11,7 +11,7 @@ export default async function InsightsPage() {
   const data = await getInsights(supabase, user.id);
   if (!data) {
     return (
-      <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4">
+      <main className="mx-auto min-h-dvh max-w-[430px] wide:max-w-2xl wide:pt-4">
         <BackHeader href="/trips" title="Your travel insights" />
         <Empty title="Nothing to read yet">Record a trip and rate a few places. I&apos;ll show you how you actually travel.</Empty>
       </main>
@@ -19,9 +19,10 @@ export default async function InsightsPage() {
   }
   const { facts, ratedCategories, favourites, line } = data;
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href="/trips" title="Your travel insights" subtitle={`Across ${data.trips} trips, ${data.memories} memories`} />
-      <div className="space-y-6 px-6">
+      {/* wide: two newspaper-style columns, read top to bottom, left then right; no card is split */}
+      <div className="space-y-6 px-6 wide:columns-2 wide:gap-8 wide:space-y-0 *:break-inside-avoid wide:*:mb-6">
         <section className="flex items-center gap-3 rounded-[20px] bg-gradient-to-br from-[#12666e] to-deeper p-5 text-white shadow-card">
           <div className="flex-1">
             <p className="text-[10px] font-bold text-aqua-light">Your travel type</p>

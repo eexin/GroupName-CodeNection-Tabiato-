@@ -11,9 +11,9 @@ import { FormMessage, Submit } from "@/components/submit";
 export function LoginForm({ next, demo, demoError, oauthFailed, google }: { next: string; demo: boolean; demoError: boolean; oauthFailed: boolean; google: React.ReactNode }) {
   const [state, action] = useActionState<AuthState, FormData>(signIn, {});
   return (
-    <main className="min-h-dvh lg:grid lg:grid-cols-2">
+    <main className="min-h-dvh wide:grid wide:grid-cols-2">
       {/* desktop: the pitch on the left — phones go straight to the form */}
-      <section className="hidden flex-col justify-center bg-gradient-to-br from-[#17707a] to-deeper px-16 text-white lg:flex">
+      <section className="hidden flex-col justify-center bg-gradient-to-br from-[#17707a] to-deeper px-16 text-white wide:flex">
         <Ato size={140} />
         <h1 className="mt-6 text-[40px] font-bold leading-tight">Tabiato <span className="text-[30px] font-normal text-[#f9ae8c]">旅跡</span></h1>
         <p className="mt-3 max-w-md text-[17px] leading-relaxed text-[#bfe4e0]">Where a trip goes after it ends. One shared map of the places you went, and a memory book Ato writes from it.</p>
@@ -22,8 +22,8 @@ export function LoginForm({ next, demo, demoError, oauthFailed, google }: { next
         </p>
       </section>
 
-      <div className="mx-auto w-full max-w-[430px] px-6 pt-[max(1.5rem,env(safe-area-inset-top))] lg:flex lg:flex-col lg:justify-center lg:pt-0">
-        <div className="flex justify-end lg:hidden"><Ato size={84} /></div>
+      <div className="mx-auto w-full max-w-[430px] px-6 pt-[max(1.5rem,env(safe-area-inset-top))] wide:flex wide:flex-col wide:justify-center wide:pt-0">
+        <div className="flex justify-end wide:hidden"><Ato size={84} /></div>
         <h2 className="mt-4 text-[27px] font-bold text-ink">Welcome back</h2>
         <p className="mt-1 text-[13.5px] text-muted">Your memories are waiting.</p>
 

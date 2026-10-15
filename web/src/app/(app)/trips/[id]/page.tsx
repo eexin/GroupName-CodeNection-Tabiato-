@@ -52,7 +52,7 @@ export default async function TripPage({ params, searchParams }: { params: Promi
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] pb-28 lg:max-w-6xl lg:pt-4">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-28 wide:max-w-6xl wide:pt-4">
       <BackHeader
         href={t.isMember ? "/trips" : "/community"}
         title={t.trip.name}
@@ -65,7 +65,7 @@ export default async function TripPage({ params, searchParams }: { params: Promi
       />
 
       {/* phones: top, map, bottom in one column · desktop: map pinned on the left, content on the right */}
-      <div className="grid px-6 [grid-template-areas:'top'_'map'_'bottom'] lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-x-8 lg:px-10 lg:[grid-template-areas:'map_top'_'map_bottom'] lg:[grid-template-rows:auto_1fr]">
+      <div className="grid px-6 [grid-template-areas:'top'_'map'_'bottom'] wide:grid-cols-[minmax(0,1fr)_440px] wide:gap-x-8 wide:px-10 land:grid-cols-[minmax(0,1fr)_minmax(0,360px)] land:gap-x-5 land:px-6 wide:[grid-template-areas:'map_top'_'map_bottom'] wide:[grid-template-rows:auto_1fr]">
         <div className="[grid-area:top]">
         <nav aria-label="View" className="grid grid-cols-2 rounded-[14px] bg-surface p-0.5">
           {[["Map", `/trips/${id}`, !timeline], ["Timeline", `/trips/${id}?view=timeline`, timeline]].map(([label, href, on]) => (
@@ -104,10 +104,16 @@ export default async function TripPage({ params, searchParams }: { params: Promi
         </div>
         <div className="[grid-area:map]">
         {!timeline && (
-          <LinkedMap pins={pins} base="/places" zoom={3} className="mt-4 h-[280px] rounded-[22px] lg:sticky lg:top-6 lg:mt-0 lg:h-[calc(100dvh-140px)]" />
+          <LinkedMap pins={pins} base="/places" zoom={3} className="mt-4 h-[280px] rounded-[22px] wide:sticky wide:top-6 wide:mt-0 wide:h-[calc(100dvh-140px)] land:top-3 land:h-[calc(100dvh-104px)]" />
         )}
         </div>
         <div className="[grid-area:bottom]">
+        {canAdd && ongoing && (
+          <Link href={`/trips/${id}/upload`} className="mt-4 hidden h-11 items-center justify-center gap-2 rounded-[14px] bg-coral text-[13px] font-bold text-white wide:flex">
+            <svg width="18" height="16" viewBox="0 0 24 22" aria-hidden><path d="M3 5.6h3.6l1.6-2.4h7.6l1.6 2.4H21c.6 0 1 .5 1 1v11c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1v-11c0-.5.4-1 1-1Z" fill="none" stroke="#fff" strokeWidth={1.8} /><circle cx="12" cy="12" r="4.2" fill="none" stroke="#fff" strokeWidth={1.8} /></svg>
+            Add photos
+          </Link>
+        )}
 
         <Link href={t.isMember ? `/trips/${id}/members` : "#"}
           className="mt-4 flex items-center gap-3 rounded-[14px] bg-card px-4 py-2.5 shadow-card">

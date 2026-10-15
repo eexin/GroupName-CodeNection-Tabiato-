@@ -41,8 +41,10 @@ export default async function ProfilePage() {
     ["Privacy & sharing", "/privacy"],
   ];
   return (
-    <main className="lg:mx-auto lg:max-w-2xl lg:pt-6">
-      <section className="bg-gradient-to-b from-[#17707a] to-deeper px-6 pb-6 lg:rounded-[24px] pt-[max(1.5rem,env(safe-area-inset-top))] text-white">
+    <main className="wide:mx-auto wide:grid wide:max-w-5xl wide:grid-cols-2 wide:items-start wide:gap-8 wide:px-6 wide:pt-6">
+      {/* wide: who you are on the left, settings on the right */}
+      <div className="min-w-0">
+      <section className="bg-gradient-to-b from-[#17707a] to-deeper px-6 pb-6 wide:rounded-[24px] pt-[max(1.5rem,env(safe-area-inset-top))] text-white">
         <div className="flex items-center justify-between">
           <h1 className="text-[17px] font-bold">Profile</h1>
           <form action={signOut}><button className="min-h-[40px] rounded-full bg-white/15 px-4 text-[12px] font-bold">Logout</button></form>
@@ -66,7 +68,7 @@ export default async function ProfilePage() {
         </dl>
       </section>
 
-      <div className="px-6">
+      <div className="px-6 wide:px-0">
         <InstallHint />
         {settingOn(profile.settings, "ato_insights") && (
           <section aria-labelledby="style-title" className="mt-6 rounded-[18px] bg-card p-4 shadow-card">
@@ -107,8 +109,11 @@ export default async function ProfilePage() {
             );
           })}
         </div>
+      </div>
+      </div>
 
-        <h2 className="mt-7 text-[11px] font-bold text-ink">Memory</h2>
+      <div className="min-w-0 px-6 wide:px-0">
+        <h2 className="mt-7 text-[11px] font-bold text-ink wide:mt-0">Memory</h2>
         <ul className="mt-2 divide-y divide-line rounded-[16px] bg-card shadow-card">
           {([["auto_pin", "Auto-pin photos by location", "Off: every photo waits for you to place it"], ["friends_can_add", "Let friends add to my trips", "Off: people you invite can view and comment only"], ["ato_insights", "Ato insights", "Patterns and suggestions from your trips"]] as [keyof Settings, string, string][]).map(([key, label, hint]) => {
             const on = settingOn(profile.settings, key);

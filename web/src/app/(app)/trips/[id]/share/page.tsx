@@ -5,6 +5,7 @@ import { AUDIENCE_LABEL, audienceOf } from "@/lib/types";
 import { BackHeader, Cover } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
 import { getTrip } from "@/features/trips/data";
+import { TWO_COLUMNS } from "@/lib/layout";
 
 function Toggle({ on }: { on: boolean }) {
   return (
@@ -32,9 +33,9 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
     ["comments", "Let people comment", "Comments your group left at each place"],
   ];
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 lg:max-w-2xl lg:pt-4">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href={`/trips/${id}/options`} title="Who can see this trip" />
-      <div className="space-y-5 px-6">
+      <div className={`space-y-5 px-6 ${TWO_COLUMNS}`}>
         <div className="overflow-hidden rounded-[20px] bg-card shadow-card">
           <Cover url={t.coverUrl ?? firstThumb} seed={id} className="h-32 w-full" />
           <div className="px-4 py-3">

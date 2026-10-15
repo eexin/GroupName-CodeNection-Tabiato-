@@ -8,6 +8,7 @@ import type { Person } from "@/lib/people";
 import { formatDay, formatTime } from "@/lib/time";
 import type { ActionResult } from "@/lib/types";
 import { shortName } from "@/lib/people";
+import { TWO_COLUMNS } from "@/lib/layout";
 
 /** Figma 18 Memory details — shown right after an upload, for the place most of it landed in. */
 export function MemoryDetails({ place, tripId, members, currency, onDone }: {
@@ -18,7 +19,7 @@ export function MemoryDetails({ place, tripId, members, currency, onDone }: {
   useEffect(() => { if (state.ok) onDone(); }, [state.ok, onDone]);
   const input = "h-11 w-full min-w-0 rounded-[12px] border border-line bg-card px-3 text-[13.5px] focus:border-coral focus:outline-none";
   return (
-    <form action={action} className="space-y-5 px-6">
+    <form action={action} className={`space-y-5 px-6 ${TWO_COLUMNS}`}>
       <div>
         <input name="name" defaultValue={place.name} aria-label="Place name" className="w-full bg-transparent text-[20px] font-bold text-ink focus:outline-none" />
         <p className="text-[11px] text-muted">Detected from photo GPS · tap to change</p>

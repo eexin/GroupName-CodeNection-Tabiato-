@@ -28,11 +28,13 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const link = me?.username ? await profileLink(me.username) : null;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href="/profile" title="Friends"
         right={<Link href="/friends/add" aria-label="Add a friend" className="grid h-9 w-9 place-items-center rounded-full bg-deep text-[20px] leading-none text-white">+</Link>} />
       {locked && <DemoLocked />}
-      <div className="px-6">
+      {/* wide: search and requests on the left, your friends on the right */}
+      <div className="grid px-6 [grid-template-areas:'side'_'list'_'foot'] wide:grid-cols-2 wide:items-start wide:gap-x-8 wide:[grid-template-areas:'side_list'_'foot_list'] wide:[grid-template-rows:auto_1fr]">
+        <div className="min-w-0 [grid-area:side]">
         <form action="/friends/add" role="search" className="mb-4">
           <input name="q" placeholder="Search by name or email" aria-label="Search by name or email"
             className="h-[46px] w-full rounded-full border border-line bg-card px-5 text-[13.5px] placeholder:text-muted focus:border-coral focus:outline-none" />
@@ -51,7 +53,9 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
             <form action={respondToFriend.bind(null, f.requester, false)}><button className="rounded-full bg-surface px-3 py-1.5 text-[11px] font-bold text-muted">Skip</button></form>
           </div>
         ))}
+        </div>
 
+        <div className="min-w-0 [grid-area:list]">
         {friends.length === 0 && incoming.length === 0 ? (
           <>
           <Empty title="No friends yet" action={<Link href="/friends/add" className="flex h-12 items-center justify-center rounded-[15px] bg-coral text-[14px] font-bold text-white">Add a friend</Link>}>
@@ -69,7 +73,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
           </>
         ) : (
           <>
-            <h2 className="mb-2 mt-4 flex justify-between text-[11px] font-bold text-ink">All friends <span className="text-muted">{friends.length}</span></h2>
+            <h2 className="mb-2 mt-4 flex justify-between text-[11px] font-bold text-ink wide:mt-0">All friends <span className="text-muted">{friends.length}</span></h2>
             <ul className="space-y-3">
               {friends.map((f) => (
                 <li key={`${f.requester}-${f.addressee}`} className="flex items-center gap-3 rounded-[18px] bg-card p-3.5 shadow-card">
@@ -84,11 +88,14 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
             </ul>
           </>
         )}
+        </div>
 
+        <div className="min-w-0 [grid-area:foot]">
         {outgoing.length > 0 && (
           <p className="mt-6 text-[11.5px] text-muted">Waiting on: {outgoing.map((f) => other(f).name).join(", ")}</p>
         )}
         <div className="mt-8 flex items-center gap-3 text-[12px] text-muted"><Ato size={48} mood="happy" />Trips are better logged together.</div>
+        </div>
       </div>
     </main>
   );

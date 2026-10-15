@@ -18,7 +18,7 @@ export default async function EditTripPage({ params }: { params: Promise<{ id: s
     signedUrls(supabase, trip.cover_path ? [trip.cover_path] : []),
   ]);
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] pb-10 wide:max-w-5xl wide:pt-4">
       <BackHeader href={`/trips/${id}/options`} title="Edit memory trip" />
       <div className="px-6">
         <TripForm friends={friends} members={(members ?? []).map((m) => m.user_id)}

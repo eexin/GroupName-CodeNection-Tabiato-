@@ -22,7 +22,7 @@ export default async function PlannerMenu() {
     ["Trip intel & alerts", current ? `Entry rules, news and alerts for ${current.name}` : "Shows up once you have a trip", current ? `/trips/${current.id}/intel` : null],
   ];
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] lg:max-w-2xl lg:pt-4 pb-10">
+    <main className="mx-auto min-h-dvh max-w-[430px] wide:max-w-2xl wide:pt-4 pb-10">
       <BackHeader href="/" title="Planner" subtitle="Optional — plan before you go" />
       <div className="px-6">
         <ul className="divide-y divide-line rounded-[18px] bg-card shadow-card">
