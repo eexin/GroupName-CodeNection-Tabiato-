@@ -154,10 +154,47 @@ create table public.expenses (
   currency     text not null default 'MYR',
   amount_myr   numeric(12, 2),                       -- converted at that day's ECB rate; null if conversion failed
   label        text,
-  split_count  int not null default 1 check (split_count >= 1),
+  split_count  int not null default 1 check (split_count >= 1),   -- how many share it; expense_shares says who
+  from_kitty   boolean not null default false,       -- paid from the group kitty (paid_by is then who recorded it)
   created_at   timestamptz not null default now()
 );
 create index expenses_trip_idx on public.expenses (trip_id);
+
+-- Settle up: who shares each expense, split equally. No rows = an older expense: split_count 1 is
+-- the payer's alone, more than 1 is shared by everyone on the trip.
+create table public.expense_shares (
+  expense_id  uuid not null references public.expenses (id) on delete cascade,
+  trip_id     uuid not null references public.trips (id) on delete cascade,
+  user_id     uuid not null references public.profiles (id) on delete cascade,
+  primary key (expense_id, user_id)
+);
+create index expense_shares_trip_idx on public.expense_shares (trip_id);
+
+-- The group kitty (公账): money each person put in. Left over at the end goes back by deposit share.
+create table public.kitty_deposits (
+  id          uuid primary key default gen_random_uuid(),
+  trip_id     uuid not null references public.trips (id) on delete cascade,
+  user_id     uuid not null references public.profiles (id) on delete cascade,
+  amount      numeric(12, 2) not null check (amount > 0),
+  currency    text not null default 'MYR',
+  amount_myr  numeric(12, 2),
+  added_by    uuid references public.profiles (id) on delete set null default auth.uid(),
+  created_at  timestamptz not null default now()
+);
+create index kitty_deposits_trip_idx on public.kitty_deposits (trip_id);
+
+-- "Mark as paid": a payment between two people on the trip, in MYR
+create table public.settlements (
+  id          uuid primary key default gen_random_uuid(),
+  trip_id     uuid not null references public.trips (id) on delete cascade,
+  from_user   uuid not null references public.profiles (id) on delete cascade,
+  to_user     uuid not null references public.profiles (id) on delete cascade,
+  amount_myr  numeric(12, 2) not null check (amount_myr > 0),
+  created_by  uuid references public.profiles (id) on delete set null default auth.uid(),
+  created_at  timestamptz not null default now(),
+  check (from_user <> to_user)
+);
+create index settlements_trip_idx on public.settlements (trip_id);
 
 create table public.ratings (
   place_id    uuid not null references public.places (id) on delete cascade,
@@ -427,6 +464,9 @@ alter table public.trip_members  enable row level security;
 alter table public.places        enable row level security;
 alter table public.photos        enable row level security;
 alter table public.expenses      enable row level security;
+alter table public.expense_shares enable row level security;
+alter table public.kitty_deposits enable row level security;
+alter table public.settlements   enable row level security;
 alter table public.ratings       enable row level security;
 alter table public.notes         enable row level security;
 alter table public.comments      enable row level security;
@@ -531,6 +571,21 @@ create policy "photos: uploader or owner deletes" on public.photos
 -- expenses: members only (public sharing shows totals later, via a view)
 create policy "expenses: members" on public.expenses
   for all to authenticated using (public.is_trip_member(trip_id)) with check (public.is_trip_member(trip_id));
+
+-- settle up and the kitty: people on the trip only, never public
+create policy "shares: members" on public.expense_shares
+  for all to authenticated using (public.is_trip_member(trip_id))
+  with check (public.is_trip_member(trip_id)
+              and exists (select 1 from public.expenses e where e.id = expense_id and e.trip_id = expense_shares.trip_id));
+create policy "kitty: members" on public.kitty_deposits
+  for all to authenticated using (public.is_trip_member(trip_id)) with check (public.is_trip_member(trip_id));
+create policy "settlements: members read" on public.settlements
+  for select to authenticated using (public.is_trip_member(trip_id));
+-- only the two people involved record or undo a payment
+create policy "settlements: payer or payee" on public.settlements
+  for insert to authenticated with check (public.is_trip_member(trip_id) and auth.uid() in (from_user, to_user));
+create policy "settlements: undo own" on public.settlements
+  for delete to authenticated using (public.is_trip_member(trip_id) and auth.uid() in (from_user, to_user));
 
 -- ratings: members read (public trips too); you write only your own
 create policy "ratings: read" on public.ratings

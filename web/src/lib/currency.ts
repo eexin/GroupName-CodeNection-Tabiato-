@@ -13,5 +13,9 @@ export const currencyForCountry = (cc: string | null | undefined): Currency => B
 export const myr = (e: { amount: number | string; currency?: string | null; amount_myr?: number | string | null }) =>
   e.amount_myr != null ? Number(e.amount_myr) : (e.currency ?? "MYR") === "MYR" ? Number(e.amount) : 0;
 
-export const money = (amount: number, currency = "MYR") =>
-  `${currency === "MYR" ? "RM" : currency} ${amount.toLocaleString("en", { maximumFractionDigits: currency === "JPY" || currency === "KRW" || currency === "IDR" ? 0 : 2 })}`;
+/** "RM 957.80", "RM 60", "JPY 30,000" — sen shown as two digits whenever there are any. */
+export const money = (amount: number, currency = "MYR") => {
+  const whole = currency === "JPY" || currency === "KRW" || currency === "IDR";
+  const cents = !whole && Math.round(amount * 100) % 100 !== 0;
+  return `${currency === "MYR" ? "RM" : currency} ${amount.toLocaleString("en", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: whole ? 0 : 2 })}`;
+};

@@ -56,6 +56,7 @@ export default async function OptionsPage({ params, searchParams }: { params: Pr
       {locked && <DemoLocked />}
       <ul className="mx-6 divide-y divide-line rounded-[18px] bg-card shadow-card">
         {owner && <li><Link href={`/trips/${id}/edit`} className="flex items-center justify-between px-4 py-4 text-[13.5px] font-medium text-body">Edit trip details <Chevron /></Link></li>}
+        <li><Link href={`/trips/${id}/money`} className="flex items-center justify-between px-4 py-4 text-[13.5px] font-medium text-body">Money: budget, split, kitty <Chevron /></Link></li>
         <li><Link href={`/trips/${id}/members`} className="flex items-center justify-between px-4 py-4 text-[13.5px] font-medium text-body">Members and invites <Chevron /></Link></li>
         {trip.status === "finished" && (
           <>

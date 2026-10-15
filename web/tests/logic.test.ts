@@ -674,3 +674,59 @@ test("search results say what and where, so the right one is obvious", () => {
   assert.equal(kindLabel("theme_park"), "Theme park");
   assert.equal(kindLabel("yes"), "");
 });
+
+import { budgetStatus, fewestTransfers, ledger, splitByWeight, splitEqually, type MoneyExpense } from "../src/features/money/settle";
+const ex = (id: string, paid_by: string, myr: number, shares: string[] = [], o: Partial<MoneyExpense> = {}): MoneyExpense =>
+  ({ id, paid_by, myr, shares, from_kitty: false, split_count: shares.length || 1, ...o });
+
+test("equal splits add back up to the sen", () => {
+  const s = splitEqually(1000, ["c", "a", "b"]);
+  assert.deepEqual([s.get("a"), s.get("b"), s.get("c")], [334, 333, 333]);
+  const w = splitByWeight(1000, new Map([["a", 1], ["b", 2]]));
+  assert.equal(w.get("a")! + w.get("b")!, 1000);
+  assert.equal(w.get("b"), 667);
+});
+
+test("settle up: ticked people share equally; fewest payments; mark as paid clears it", () => {
+  const m = ["ex", "mx", "qi"];
+  const L = ledger(m, [ex("1", "ex", 90, m), ex("2", "mx", 30, ["mx", "qi"]), ex("3", "qi", 12)], [], []);
+  // ex paid 90, owes 30 → +60; mx paid 30, owes 30+15 → −15; qi paid 12 (her own), owes 30+15 → −45
+  assert.equal(L.people.ex.net, 60);
+  assert.equal(L.people.mx.net, -15);
+  assert.equal(L.people.qi.net, -45);
+  assert.equal(L.total, 132);
+  assert.deepEqual(L.transfers, [{ from: "qi", to: "ex", myr: 45 }, { from: "mx", to: "ex", myr: 15 }]);
+  const after = ledger(m, [ex("1", "ex", 90, m), ex("2", "mx", 30, ["mx", "qi"]), ex("3", "qi", 12)], [], [{ from: "qi", to: "ex", myr: 45 }, { from: "mx", to: "ex", myr: 15 }]);
+  assert.equal(after.settled, true);
+  assert.equal(Object.values(L.people).reduce((a, p) => a + p.net, 0), 0);
+});
+
+test("older expenses: split_count 1 is the payer's own, more than 1 is everyone's", () => {
+  const m = ["a", "b"];
+  assert.equal(ledger(m, [ex("1", "a", 50)], [], []).settled, true);
+  const L = ledger(m, [ex("1", "a", 50, [], { split_count: 2 })], [], []);
+  assert.deepEqual(L.transfers, [{ from: "b", to: "a", myr: 25 }]);
+});
+
+test("kitty: spending counts by deposit share, leftovers go back by deposit share", () => {
+  const m = ["a", "b", "c"];
+  // a put in 200, b 100; the kitty paid 150 for all three; c put nothing in
+  const L = ledger(m, [ex("1", "a", 150, m, { from_kitty: true })], [{ user_id: "a", myr: 200 }, { user_id: "b", myr: 100 }], []);
+  assert.equal(L.kitty.in, 300);
+  assert.equal(L.kitty.spent, 150);
+  assert.equal(L.kitty.left, 150);
+  assert.deepEqual(L.kitty.refunds, { a: 100, b: 50 });
+  // a's part of the kitty spend is 100, b's 50; each owes 50 → a +50, b 0, c −50
+  assert.deepEqual(L.transfers, [{ from: "c", to: "a", myr: 50 }]);
+});
+
+test("budget: left per remaining day, and over budget", () => {
+  const b = budgetStatus(3000, 1200, "2026-10-10", "2026-10-15", "2026-10-13");
+  assert.equal(b.daysLeft, 3);
+  assert.equal(b.perDay, 600);
+  assert.equal(b.pct, 40);
+  assert.equal(budgetStatus(1000, 1100, "2026-10-10", "2026-10-15", "2026-10-13").over, true);
+  assert.equal(budgetStatus(1000, 100, "2026-10-20", "2026-10-21", "2026-10-13").daysLeft, 2);
+  assert.equal(budgetStatus(1000, 100, "2026-10-01", "2026-10-02", "2026-10-13").daysLeft, null);
+  assert.deepEqual(fewestTransfers(new Map([["a", 1], ["b", -1]])), []);
+});

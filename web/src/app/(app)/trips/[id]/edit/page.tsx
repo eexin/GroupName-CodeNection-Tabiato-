@@ -22,7 +22,7 @@ export default async function EditTripPage({ params }: { params: Promise<{ id: s
       <BackHeader href={`/trips/${id}/options`} title="Edit memory trip" />
       <div className="px-6">
         <TripForm friends={friends} members={(members ?? []).map((m) => m.user_id)}
-          initial={{ id, name: trip.name, destination: trip.destination, start_date: trip.start_date, end_date: trip.end_date, is_public: trip.is_public, friends_can_view: trip.friends_can_view ?? false, coverUrl: trip.cover_path ? urls[trip.cover_path] ?? null : null }} />
+          initial={{ id, name: trip.name, destination: trip.destination, start_date: trip.start_date, end_date: trip.end_date, is_public: trip.is_public, friends_can_view: trip.friends_can_view ?? false, budget: trip.budget != null ? Number(trip.budget) : null, coverUrl: trip.cover_path ? urls[trip.cover_path] ?? null : null }} />
       </div>
     </main>
   );

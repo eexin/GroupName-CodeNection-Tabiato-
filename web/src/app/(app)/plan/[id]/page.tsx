@@ -141,6 +141,10 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
             <span className="text-[12px] text-body"><strong className="block text-ink">Trip intel</strong>Entry rules and travel news before you go</span>
             <span className="text-coral">›</span>
           </Link>
+          <Link href={`/trips/${id}/money`} className="mt-2 flex items-center justify-between rounded-[14px] bg-card px-4 py-3 shadow-card">
+            <span className="text-[12px] text-body"><strong className="block text-ink">Money</strong>{trip.budget ? `Budget RM ${Number(trip.budget).toLocaleString("en-MY")} · ` : ""}collect the kitty before you go</span>
+            <span className="text-coral">›</span>
+          </Link>
 
           {owner ? (
             <form action={startTrip.bind(null, id)} className="mt-5 flex items-center gap-3">

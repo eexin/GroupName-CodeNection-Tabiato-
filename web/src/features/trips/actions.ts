@@ -18,10 +18,17 @@ const tripSchema = z
     end_date: z.string().optional(),
     is_public: z.boolean(),
     friends_can_view: z.boolean(),
+    budget: z.coerce.number({ message: "Enter the budget in RM, like 3000." }).min(0).max(10_000_000).nullable(),
   })
   .refine((t) => !t.start_date || !t.end_date || t.end_date >= t.start_date, {
     message: "The end date is before the start date.",
   });
+
+/** "Budget for the whole trip": empty means none; "3,000" means 3000. */
+function budgetFrom(form: FormData) {
+  const raw = String(form.get("budget") ?? "").replace(/,/g, "").trim();
+  return raw === "" ? null : raw;
+}
 
 /** "audience" from the form (private, friends or public); the old "Share to Community" switch still works. */
 function audienceFrom(form: FormData): Audience {
@@ -45,6 +52,7 @@ export async function createTripForm(_: CreateResult, form: FormData): Promise<C
     destination: form.get("destination") || undefined,
     start_date: form.get("start_date") || undefined,
     end_date: form.get("end_date") || undefined,
+    budget: budgetFrom(form),
     ...audienceFields(audienceFrom(form)),
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -75,6 +83,7 @@ export async function updateTrip(tripId: string, _: CreateResult, form: FormData
     destination: form.get("destination") || undefined,
     start_date: form.get("start_date") || undefined,
     end_date: form.get("end_date") || undefined,
+    budget: budgetFrom(form),
     ...audienceFields(audienceFrom(form)),
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -120,6 +129,7 @@ export async function createTrip(_: TripState, form: FormData): Promise<TripStat
     destination: form.get("destination") || undefined,
     start_date: form.get("start_date") || undefined,
     end_date: form.get("end_date") || undefined,
+    budget: budgetFrom(form),
     ...audienceFields(audienceFrom(form)),
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };

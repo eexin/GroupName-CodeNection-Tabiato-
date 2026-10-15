@@ -90,6 +90,7 @@ see docs/ARCHITECTURE.md. Put new code in the feature it belongs to.
   dropped. The planner is the one place the model decides: it picks among REAL places the code
   found (`features/planner/ai-plan.ts`), and code enforces pins, real places and times afterwards. Every AI call has a template fallback, so the app works with no `GROQ_API_KEY`.
 - Model is `GROQ_MODEL` (default `openai/gpt-oss-120b`) — check the model list in your Groq playground.
+  Receipt photos (`receipt_scan`) use `GROQ_VISION_MODEL`; image calls are never cached and the photo is never stored.
 
 ## Data and security
 

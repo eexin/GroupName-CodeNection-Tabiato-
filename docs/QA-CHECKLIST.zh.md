@@ -79,6 +79,17 @@
 - [ ] Use this as a starting point → 新计划里有 Hokkaido 的地点
 - [ ] Message Max → 送出 → Profile → Messages 看得到对话
 
+## H2. 钱（预算、分账、公账、扫收据）
+- [ ] Tokyo → 「RM 2,568 of RM 4,000」卡片 → Money：进度条、「about RM 477 a day for 3 days」
+- [ ] Tokyo → Money → Settle up：「Max pays you RM 957.80」；Kitty：两人放进日币、剩下的按比例退回
+- [ ] Bali → Money → 「Qii pays you」→ Mark as paid → 出现「Qii paid you」、按 Undo 可撤回
+- [ ] Bali → Money → Set a budget（只有旅行主人看得到）→ 输入 2000 → Save budget
+- [ ] Add expense → Paid by 选 Kitty、Split 取消 Kai → 显示「From the kitty · split 3 ways」、「RM 30 each」
+- [ ] 地点页 → Spent here → 选 Max 付、只跟 Max 分 → 「Max paid, split 2 ways」
+- [ ] Scan a receipt → 拍一张收据 → Ato 说「I read RM … at …」并填好金额（照片不会存）；没设 AI 时会叫你手动输入
+- [ ] 上传照片后的 Memory details → 输入金额 → 勾「split it equally with everyone who was there」
+- [ ] 360 宽的手机上 Money 页没有横向滚动、按钮没有被挡住
+
 ## I. 设定与权限
 - [ ] Profile → 地图主题切 Night Sky → 回首页地图变夜空
 - [ ] 关掉「Auto-pin photos by location」→ 上传有定位的照片 → 变成「No location」

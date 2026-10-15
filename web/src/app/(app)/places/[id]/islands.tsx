@@ -1,8 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { addComment, addExpense, deleteExpense, draftNote, renamePlace, saveNote, setRating } from "@/features/places/actions";
-import { CURRENCIES } from "@/lib/currency";
+import { addComment, draftNote, renamePlace, saveNote, setRating } from "@/features/places/actions";
 import { Ato } from "@/components/ato";
 import type { ActionResult } from "@/lib/types";
 
@@ -89,38 +88,6 @@ export function NoteEditor({ placeId, tripId, initial, drafted, insights = true 
         </button>
       </div>
     </div>
-  );
-}
-
-export function ExpenseForm({ placeId, tripId, currency = "MYR" }: { placeId: string; tripId: string; currency?: string }) {
-  const [state, action, busy] = useActionState<ActionResult, FormData>(addExpense.bind(null, placeId, tripId), {});
-  return (
-    <form action={action} className="mt-2 rounded-[16px] bg-card p-3 shadow-card">
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_minmax(0,1.2fr)] gap-2">
-        <select name="currency" defaultValue={currency} aria-label="Currency" className="h-10 rounded-[10px] border border-line bg-card px-2 text-[12px]">
-          {CURRENCIES.map((c) => <option key={c} value={c}>{c === "MYR" ? "RM" : c}</option>)}
-        </select>
-        <input name="amount" inputMode="decimal" placeholder="Amount" aria-label="Amount" required
-          className="h-10 w-full min-w-0 rounded-[10px] border border-line px-3 text-[13px] focus:border-coral focus:outline-none" />
-        <input name="label" placeholder="What for?" aria-label="What for" maxLength={60}
-          className="h-10 w-full min-w-0 rounded-[10px] border border-line px-3 text-[13px] focus:border-coral focus:outline-none" />
-      </div>
-      <div className="mt-2">
-        <select name="split" aria-label="Split between" defaultValue="1" className="h-10 w-full rounded-[10px] border border-line bg-card px-2 text-[12px]">
-          {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n === 1 ? "Just me" : `Split ${n}`}</option>)}
-        </select>
-      </div>
-      {state.error && <p role="alert" className="mt-2 text-[11.5px] text-coral-dark">{state.error}</p>}
-      <button disabled={busy} className="mt-2 h-9 w-full rounded-[10px] bg-surface text-[12px] font-bold text-deep">{busy ? "Adding…" : "Add expense"}</button>
-    </form>
-  );
-}
-
-export function DeleteExpense({ id, placeId }: { id: string; placeId: string }) {
-  const [busy, start] = useTransition();
-  return (
-    <button onClick={() => start(() => { deleteExpense(id, placeId); })} disabled={busy} aria-label="Remove expense"
-      className="grid h-10 w-10 place-items-center rounded-full text-[18px] leading-none text-muted">×</button>
   );
 }
 

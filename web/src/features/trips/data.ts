@@ -16,7 +16,7 @@ export type TripSummary = {
   members: Person[];
 };
 
-async function peopleById(supabase: SupabaseClient, ids: string[]) {
+export async function peopleById(supabase: SupabaseClient, ids: string[]) {
   const unique = [...new Set(ids)];
   if (!unique.length) return new Map<string, Person>();
   const { data } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", unique);
@@ -168,8 +168,10 @@ export async function getPlace(supabase: SupabaseClient, placeId: string, userId
   const people = await peopleById(supabase, [...ph.map((x) => x.uploaded_by), ...cs.map((c) => c.user_id), ...ns.map((n) => n.user_id), ...(there ?? []).map((t) => t.user_id)]);
   const urls = await signedUrls(supabase, ph.map((x) => x.storage_path));
   const rs = (ratings ?? []) as Rating[];
-  const { data: membership } = await supabase
-    .from("trip_members").select("status").eq("trip_id", p.trip_id).eq("user_id", userId).maybeSingle();
+  const { data: tripMembers } = await supabase.from("trip_members").select("user_id, status").eq("trip_id", p.trip_id);
+  const joined = (tripMembers ?? []).filter((m) => m.status === "joined").map((m) => m.user_id as string);
+  const membership = (tripMembers ?? []).find((m) => m.user_id === userId);
+  const payers = await peopleById(supabase, [...joined, ...((expenses ?? []) as Expense[]).map((e) => e.paid_by)]);
 
   return {
     place: p,
@@ -177,6 +179,9 @@ export async function getPlace(supabase: SupabaseClient, placeId: string, userId
     isMember: membership?.status === "joined",
     photos: ph.map((x) => ({ ...x, url: urls[x.storage_path] ?? null, by: people.get(x.uploaded_by)?.name ?? "Someone" })),
     expenses: (expenses ?? []) as Expense[],
+    // everyone on the trip, for "paid by" and "split with"; and names for whoever paid
+    members: joined.map((id) => payers.get(id) ?? person(id, null)).sort((a, b) => a.name.localeCompare(b.name)),
+    payer: (id: string) => payers.get(id) ?? person(id, null),
     myRating: rs.find((r) => r.user_id === userId)?.stars ?? null,
     avgRating: rs.length ? Math.round((rs.reduce((s, r) => s + r.stars, 0) / rs.length) * 10) / 10 : null,
     myNote: ns.find((n) => n.user_id === userId) ?? null,

@@ -16,12 +16,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * the itinerary, checked against the real place list) before anything is saved.
  */
 
-export type AiTask = "memory_book" | "insight" | "plan_titles" | "plan_itinerary" | "plan_places" | "plan_stays" | "rain_replan" | "hazard_advice" | "intel_notes" | "note_draft" | "search_summary";
+export type AiTask = "memory_book" | "insight" | "plan_titles" | "plan_itinerary" | "plan_places" | "plan_stays" | "rain_replan" | "hazard_advice" | "intel_notes" | "note_draft" | "search_summary" | "receipt_scan";
 
 // gpt-oss is on every Groq account; some new accounts have no Llama models at all
 const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+// reading a photo (receipts) needs a model that sees images
+const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || "qwen/qwen3.6-27b";
 
-async function viaN8n(task: AiTask, system: string, user: string, timeoutMs: number): Promise<unknown | null> {
+async function viaN8n(task: AiTask, system: string, user: string, timeoutMs: number, image?: string): Promise<unknown | null> {
   const url = process.env.N8N_WEBHOOK_URL;
   const secret = process.env.N8N_SECRET;
   if (!url || !secret) return null;
@@ -29,7 +31,7 @@ async function viaN8n(task: AiTask, system: string, user: string, timeoutMs: num
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-tabiato-secret": secret },
-      body: JSON.stringify({ task, system, user }),
+      body: JSON.stringify({ task, system, user, ...(image ? { image } : {}) }),
       signal: AbortSignal.timeout(timeoutMs), // a sleeping free-tier host may take a while to wake
       cache: "no-store",
     });
@@ -41,18 +43,22 @@ async function viaN8n(task: AiTask, system: string, user: string, timeoutMs: num
   }
 }
 
-async function viaGroq(system: string, user: string, timeoutMs: number): Promise<unknown | null> {
+async function viaGroq(system: string, user: string, timeoutMs: number, image?: string): Promise<unknown | null> {
   const key = process.env.GROQ_API_KEY;
   if (!key) return null;
+  const model = image ? GROQ_VISION_MODEL : GROQ_MODEL;
   try {
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: GROQ_MODEL, temperature: 0.6, response_format: { type: "json_object" },
+        model, temperature: image ? 0 : 0.6, response_format: { type: "json_object" },
         // gpt-oss thinks before it answers; a little thinking is plenty for JSON and much faster
-        ...(GROQ_MODEL.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : {}),
-        messages: [{ role: "system", content: system }, { role: "user", content: user }],
+        ...(model.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : model.startsWith("qwen/") ? { reasoning_effort: "none" } : {}),
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: image ? [{ type: "text", text: user }, { type: "image_url", image_url: { url: image } }] : user },
+        ],
       }),
       signal: AbortSignal.timeout(timeoutMs),
       cache: "no-store",
@@ -65,11 +71,16 @@ async function viaGroq(system: string, user: string, timeoutMs: number): Promise
   }
 }
 
-/** timeoutMs: how long to wait for each of n8n and Groq. Callers with a tight time budget lower it. */
-export async function aiJSON<T>(task: AiTask, system: string, user: string, schema: z.ZodType<T>, opts: { timeoutMs?: number } = {}): Promise<T | null> {
+/**
+ * timeoutMs: how long to wait for each of n8n and Groq. Callers with a tight time budget lower it.
+ * image: a data: URL the model should look at (receipts). It is sent once and never stored —
+ * image calls skip the cache entirely.
+ */
+export async function aiJSON<T>(task: AiTask, system: string, user: string, schema: z.ZodType<T>, opts: { timeoutMs?: number; image?: string } = {}): Promise<T | null> {
   const timeoutMs = opts.timeoutMs ?? 30_000;
+  const image = opts.image;
   const hash = createHash("sha256").update(`${task}\n${system}\n${user}`).digest("hex");
-  const admin = createAdminClient();
+  const admin = image ? null : createAdminClient();
 
   if (admin) {
     const { data } = await admin.from("llm_cache").select("response").eq("prompt_hash", hash).maybeSingle();
@@ -77,7 +88,7 @@ export async function aiJSON<T>(task: AiTask, system: string, user: string, sche
     if (cached?.success) return cached.data;
   }
 
-  for (const attempt of [() => viaN8n(task, system, user, timeoutMs), () => viaGroq(system, user, timeoutMs)]) {
+  for (const attempt of [() => viaN8n(task, system, user, timeoutMs, image), () => viaGroq(system, user, timeoutMs, image)]) {
     const raw = await attempt();
     if (raw === null) continue;
     const parsed = schema.safeParse(raw);

@@ -129,10 +129,23 @@ async function trip(owner: Who, fields: Record<string, unknown>, members: Who[] 
   return t.id as string;
 }
 
+/** with: who shares it, split equally (none = the payer alone). kitty: paid from the group kitty. */
+type Spend = { amount: number; label: string; by: Who; with?: Who[]; kitty?: boolean; currency?: string; myr?: number };
+
+async function expense(tripId: string, placeId: string | null, s: Spend, when?: string) {
+  const sharers = s.with?.length ? s.with : [s.by];
+  const e = must(await db.from("expenses").insert({
+    trip_id: tripId, place_id: placeId, paid_by: ids[s.by], amount: s.amount, label: s.label, split_count: sharers.length, from_kitty: Boolean(s.kitty),
+    currency: s.currency ?? "MYR", amount_myr: s.myr ?? (s.currency && s.currency !== "MYR" ? null : s.amount),
+    ...(when ? { created_at: when } : {}),
+  }).select("id").single(), "expense");
+  ok(await db.from("expense_shares").insert(sharers.map((w) => ({ expense_id: e.id, trip_id: tripId, user_id: ids[w] }))), "shares");
+}
+
 type PlaceSpec = {
   name: string; category: string; lat: number; lng: number; arrive: string; photos: number;
   gapMin?: number; by?: Who[]; ratings?: Partial<Record<Who, number>>;
-  spend?: { amount: number; label: string; by: Who; split?: number; currency?: string; myr?: number }[];
+  spend?: Spend[];
   note?: { by: Who; body: string }; comments?: { by: Who; body: string }[];
   /** start this many photos into the place's folder, so a place shared by two trips gets a different cover */
   skip?: number;
@@ -166,12 +179,7 @@ async function places(tripId: string, specs: PlaceSpec[]) {
     for (const [who, stars] of Object.entries(p.ratings ?? {})) {
       ok(await db.from("ratings").insert({ place_id: placeId, trip_id: tripId, user_id: ids[who as Who], stars }), "rating");
     }
-    for (const s of p.spend ?? []) {
-      ok(await db.from("expenses").insert({
-        trip_id: tripId, place_id: placeId, paid_by: ids[s.by], amount: s.amount, label: s.label, split_count: s.split ?? 1,
-        currency: s.currency ?? "MYR", amount_myr: s.myr ?? (s.currency && s.currency !== "MYR" ? null : s.amount),
-      }), "expense");
-    }
+    for (const s of p.spend ?? []) await expense(tripId, placeId, s, addMin(p.arrive, 30));
     if (p.note) ok(await db.from("notes").insert({ place_id: placeId, trip_id: tripId, user_id: ids[p.note.by], body: p.note.body }), "note");
     for (const c of p.comments ?? []) {
       ok(await db.from("comments").insert({ place_id: placeId, trip_id: tripId, user_id: ids[c.by], body: c.body }), "comment");
@@ -229,20 +237,22 @@ async function main() {
       note: { by: "ex", body: "We had the cliff to ourselves for twenty minutes. Nobody wanted to leave." },
       comments: [{ by: "mx", body: "worth waking up at 6 for this" }] },
     { name: "Single Fin", category: "food", lat: -8.8150, lng: 115.0880, arrive: at("2026-06-08", "08:20"), photos: 2, ratings: { ex: 5 },
-      spend: [{ amount: 120, label: "Brunch", by: "ex", split: 3 }] },
+      spend: [{ amount: 120, label: "Brunch", by: "ex", with: ["ex", "mx", "qi"] }] },
     { name: "Padang Padang Beach", category: "nature", lat: -8.8114, lng: 115.1030, arrive: at("2026-06-09", "07:40"), photos: 3, by: ["ex", "qi"], ratings: { ex: 5 } },
     { name: "Jimbaran Bay", category: "food", lat: -8.7710, lng: 115.1650, arrive: at("2026-06-09", "17:30"), photos: 8, gapMin: 9, by: ["ex", "ex", "mx"], ratings: { ex: 4 },
-      spend: [{ amount: 180, label: "Seafood dinner", by: "mx", split: 3 }],
+      spend: [{ amount: 180, label: "Seafood dinner", by: "mx", with: ["ex", "mx", "qi"] }],
       comments: [{ by: "qi", body: "the grilled fish was unreal" }] },
     { name: "Tanah Lot", category: "culture", lat: -8.6212, lng: 115.0868, arrive: at("2026-06-10", "10:00"), photos: 3, ratings: { ex: 3, mx: 3 },
-      spend: [{ amount: 30, label: "Temple entry", by: "ex" }] },
+      spend: [{ amount: 30, label: "Temple entry", by: "ex", with: ["ex", "mx"] }] },
     { name: "Tegallalang Rice Terrace", category: "nature", lat: -8.4318, lng: 115.2791, arrive: at("2026-06-10", "12:30"), photos: 3, ratings: { ex: 3 } },
     { name: "Ubud Monkey Forest", category: "nature", lat: -8.5188, lng: 115.2585, arrive: at("2026-06-10", "14:30"), photos: 3, by: ["mx"], ratings: { ex: 3 } },
     { name: "Ubud Art Market", category: "shopping", lat: -8.5069, lng: 115.2625, arrive: at("2026-06-10", "16:30"), photos: 2, by: ["qi"], ratings: { ex: 2, mx: 2 },
       spend: [{ amount: 60, label: "Souvenirs", by: "qi" }] },
     { name: "Seminyak Beach", category: "nature", lat: -8.6913, lng: 115.1569, arrive: at("2026-06-11", "17:00"), photos: 6, gapMin: 14, ratings: { ex: 4 } },
   ]);
-  ok(await db.from("expenses").insert({ trip_id: bali, place_id: null, paid_by: ids.ex, amount: 70, label: "Grab to airport" }), "expense");
+  // settle up: Qii owes Ee Xin and Max (Money page → "You get back", "Mark as paid"). No budget, so
+  // the owner sees "Set a budget". Kept small so food stays the biggest share of the spend.
+  await expense(bali, null, { amount: 70, label: "Grab to airport", by: "ex", with: ["ex", "mx", "qi"] }, at("2026-06-11", "19:30"));
 
   // --- Tokyo: ongoing and dated around today (today is day 3 of 5), so weather and replans are live ---
   const d1 = dayOffset(-2), d2 = dayOffset(-1), d3 = dayOffset(0), d4 = dayOffset(1);
@@ -258,11 +268,20 @@ async function main() {
     { name: "Tsukiji Outer Market", category: "food", lat: 35.6655, lng: 139.7707, arrive: at(d1, "08:30"), photos: 4, ratings: { ex: 5 },
       spend: [{ amount: 1500, currency: "JPY", myr: 46, label: "Breakfast crawl", by: "ex" }] },
     { name: "Shibuya Crossing", category: "culture", lat: 35.6595, lng: 139.7005, arrive: at(d1, "17:30"), photos: 5, by: ["ex", "mx"], ratings: { ex: 4 },
-      spend: [{ amount: 4350, currency: "JPY", myr: 134, label: "Lunch", by: "mx", split: 3 }],
+      spend: [{ amount: 4350, currency: "JPY", myr: 134, label: "Lunch", by: "mx", with: ["ex", "mx"] }],
       note: { by: "ex", body: "Came back a second time just for the view from the Starbucks. Worth the queue." },
       comments: [{ by: "mx", body: "the crossing at night was crazy" }] },
-    { name: "Senso-ji", category: "culture", lat: 35.7148, lng: 139.7967, arrive: at(d2, "09:10"), photos: 3, ratings: { ex: 4 } },
+    { name: "Senso-ji", category: "culture", lat: 35.7148, lng: 139.7967, arrive: at(d2, "09:10"), photos: 3, ratings: { ex: 4 },
+      spend: [{ amount: 7800, currency: "JPY", myr: 239, label: "Tempura dinner", by: "ex", kitty: true, with: ["ex", "mx"] }] },
   ]);
+  // money: a budget for the whole trip, a kitty both put cash into, and the hotel paid by Ee Xin
+  ok(await db.from("trips").update({ budget: 4000 }).eq("id", tokyo), "tokyo budget");
+  ok(await db.from("kitty_deposits").insert([
+    { trip_id: tokyo, user_id: ids.ex, amount: 30000, currency: "JPY", amount_myr: 921, added_by: ids.ex },
+    { trip_id: tokyo, user_id: ids.mx, amount: 20000, currency: "JPY", amount_myr: 614, added_by: ids.ex },
+  ]), "kitty");
+  await expense(tokyo, null, { amount: 64000, currency: "JPY", myr: 1965, label: "Hotel, 4 nights", by: "ex", with: ["ex", "mx"] }, at(d1, "15:00"));
+  await expense(tokyo, null, { amount: 6000, currency: "JPY", myr: 184, label: "Suica top-ups", by: "ex", kitty: true, with: ["ex", "mx"] }, at(d1, "08:00"));
   for (let i = 0; i < 2; i++) {
     // a real shot from scripts/demo-photos/no-location/ if there is one — it has no GPS on purpose
     const real = realPhotos("No location");
@@ -486,7 +505,9 @@ Demo path as Ee Xin:
   Bali → members → Kai is view-only; the ••• menu changes that
   Profile → Messages: an unread reply from Max · Profile → map theme: try Night Sky
   Community → Hokkaido → Ato compares its cost with Bali → "Use this as a starting point"
-  Search: "Everything I rated 5 stars", "Places I went with Max"`);
+  Search: "Everything I rated 5 stars", "Places I went with Max"
+  Tokyo → Money: RM 4,000 budget with "left per day", a yen kitty, Max owes you for the hotel
+  Bali → Money: Qii owes you and Max → "Mark as paid"; set a budget; Spent here → Scan a receipt`);
 }
 
 // run with --demo-alert to add a clearly labelled demo typhoon for a live presentation

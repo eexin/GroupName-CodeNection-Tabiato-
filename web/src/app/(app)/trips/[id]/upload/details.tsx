@@ -34,8 +34,14 @@ export function MemoryDetails({ place, tripId, members, currency, onDone }: {
             {CURRENCIES.map((c) => <option key={c} value={c}>{c === "MYR" ? "RM" : c}</option>)}
           </select>
           <input name="amount" inputMode="decimal" placeholder="Amount" aria-label="Amount" className={input} />
-          <input name="label" placeholder="Lunch" aria-label="What for" className={input} />
+          <input name="label" placeholder="Lunch" aria-label="What for" maxLength={60} className={input} />
         </div>
+        {members.length > 1 && (
+          <label className="mt-2 flex min-h-[44px] cursor-pointer items-center gap-3 text-[12.5px] text-body">
+            <input type="checkbox" name="split_who" defaultChecked className="h-5 w-5 shrink-0 accent-[#b8402a]" />
+            <span>You paid; split it equally with everyone who was there <span className="text-muted">(below)</span></span>
+          </label>
+        )}
       </section>
       <section>
         <h2 className="mb-1 text-[11px] font-bold text-ink">Your rating</h2>

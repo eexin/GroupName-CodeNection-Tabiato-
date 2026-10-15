@@ -10,7 +10,7 @@ import type { Person } from "@/lib/people";
 import { createClient } from "@/lib/supabase/client";
 import { AUDIENCE_LABEL, audienceOf } from "@/lib/types";
 
-type Initial = { id: string; name: string; destination: string | null; start_date: string | null; end_date: string | null; is_public: boolean; friends_can_view?: boolean; coverUrl: string | null };
+type Initial = { id: string; name: string; destination: string | null; start_date: string | null; end_date: string | null; is_public: boolean; friends_can_view?: boolean; budget?: number | null; coverUrl: string | null };
 
 /** Figma 16 New memory trip and "edit trip" — one form. */
 export function TripForm({ friends, members = [], initial }: { friends: Person[]; members?: string[]; initial?: Initial }) {
@@ -61,6 +61,7 @@ export function TripForm({ friends, members = [], initial }: { friends: Person[]
         <Field label="Start" name="start_date" type="date" defaultValue={initial?.start_date ?? ""} />
         <Field label="End" name="end_date" type="date" defaultValue={initial?.end_date ?? ""} />
       </div>
+      <Field label="Budget for the whole trip (RM, optional)" name="budget" inputMode="decimal" placeholder="3000" defaultValue={initial?.budget ?? ""} />
 
       <fieldset>
         <legend className="mb-1 text-[11px] font-bold text-ink">Travel with</legend>

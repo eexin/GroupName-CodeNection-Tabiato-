@@ -7,6 +7,8 @@ import { LinkedMap } from "@/components/map-links";
 import { AtoNote, Avatars, BackHeader, ButtonLink, Cover, Empty, Fab, Stars } from "@/components/ui";
 import { requireUser } from "@/features/auth/guards";
 import { getTrip, type PlaceSummary } from "@/features/trips/data";
+import { moneySummary } from "@/features/money/data";
+import { money as fmt } from "@/lib/currency";
 import { dayKey, formatDay, formatRange, formatTime } from "@/lib/time";
 
 function PlaceRow({ p, thumb }: { p: PlaceSummary; thumb: string | null }) {
@@ -39,6 +41,8 @@ export default async function TripPage({ params, searchParams }: { params: Promi
   // planned trips redirect to the planner above, so here the trip is under way or over
   const canAdd = t.isMember && t.me?.role !== "viewer";
   const joined = t.members.filter((m) => m.status === "joined");
+  const cash = t.isMember ? await moneySummary(supabase, id, user.id) : null;
+  const rm = (n: number) => fmt(Math.round(n));
   const pins = t.places.map((p) => ({ id: p.id, lat: p.lat, lng: p.lng, count: p.photos, label: p.name }));
 
   const days = new Map<string, PlaceSummary[]>();
@@ -111,6 +115,25 @@ export default async function TripPage({ params, searchParams }: { params: Promi
           <span className="flex-1 text-[11.5px] font-medium text-body">{joined.length} {joined.length === 1 ? "person" : "people"} on this trip</span>
           {t.isMember && <span className="text-[11px] font-bold text-coral">Manage</span>}
         </Link>
+
+        {cash && (
+          <Link href={`/trips/${id}/money`} className="mt-3 flex items-center gap-3 rounded-[14px] bg-card px-4 py-2.5 shadow-card">
+            <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sand-wash text-[13px] font-bold text-sand-ink">RM</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[12px] font-bold text-ink">
+                {cash.count === 0 && !cash.budget ? "Money" : cash.budget ? `${rm(cash.spent)} of ${rm(cash.budget.budget)}` : `${rm(cash.spent)} spent`}
+                {cash.budget?.over && <span className="ml-1.5 text-[10.5px] text-coral-dark">over budget</span>}
+              </span>
+              <span className="block text-[11px] text-muted">
+                {cash.count === 0 ? "Budget, split costs, shared kitty"
+                  : joined.length < 2 ? `${cash.count} ${cash.count === 1 ? "expense" : "expenses"}`
+                  : cash.settled ? "All settled"
+                  : cash.owe > 0 ? `You owe ${fmt(cash.owe)}` : cash.owed > 0 ? `You get back ${fmt(cash.owed)}` : "You're even"}
+              </span>
+            </span>
+            <span className="text-[11px] font-bold text-coral">Open</span>
+          </Link>
+        )}
 
         {t.isMember && t.unplaced.length > 0 && (
           <Link href={`/trips/${id}/place-photos`} className="mt-3 flex items-center gap-3 rounded-[14px] border-l-4 border-sand bg-card px-4 py-3 shadow-card">

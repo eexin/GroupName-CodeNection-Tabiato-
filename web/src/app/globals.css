@@ -25,6 +25,7 @@
 
   --color-sand: #e8a23f;         /* decoration and text on dark backgrounds only */
   --color-sand-ink: #86570f;     /* gold text on light backgrounds */
+  --color-sand-wash: #fff3e2;    /* warm card behind sand-ink / amber-ink text (the kitty, warnings) */
   --color-amber-ink: #8e3f13;    /* warning text */
   --color-blush: #f58a6b;
   --color-land: #f2ead8;

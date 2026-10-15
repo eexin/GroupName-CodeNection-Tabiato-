@@ -5,7 +5,9 @@ import { requireUser } from "@/features/auth/guards";
 import { getPlace } from "@/features/trips/data";
 import { formatDay, formatTime } from "@/lib/time";
 import { currencyForCountry, money, myr } from "@/lib/currency";
-import { CommentForm, DeleteExpense, ExpenseForm, NoteEditor, PlaceName, Photos, RatingStars } from "@/app/(app)/places/[id]/islands";
+import { CommentForm, NoteEditor, PlaceName, Photos, RatingStars } from "@/app/(app)/places/[id]/islands";
+import { ExpenseForm, KittyIcon } from "@/features/money/components/expense-form";
+import { Remove } from "@/features/money/components/islands";
 import { shortName } from "@/lib/people";
 import { PersonLink } from "@/components/ui";
 
@@ -43,28 +45,34 @@ export default async function PlacePage({ params }: { params: Promise<{ id: stri
 
       {d.isMember && (
         <>
-          <Label>Spent here</Label>
+          <div className="mb-2 mt-6 flex items-baseline justify-between gap-3">
+            <h2 className="text-[11px] font-bold text-ink">Spent here</h2>
+            <Link href={`/trips/${trip.id}/money`} className="text-[11px] font-bold text-coral">Trip money</Link>
+          </div>
           {d.expenses.length > 0 && (
             <ul className="space-y-2">
-              {d.expenses.map((e) => (
-                <li key={e.id} className="flex items-center gap-3 rounded-[14px] bg-card px-4 py-3 shadow-card">
-                  <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-surface text-[15px] font-bold text-coral">$</span>
-                  <span className="flex-1">
-                    <span className="block text-[14px] font-bold text-ink">
-                      {money(Number(e.amount), e.currency)}
-                      {e.currency !== "MYR" && <span className="ml-1.5 text-[11px] font-medium text-muted">{e.amount_myr != null ? `≈ ${money(Number(e.amount_myr))}` : "rate unavailable"}</span>}
+              {d.expenses.map((e) => {
+                const by = e.from_kitty ? "From the kitty" : `${e.paid_by === user.id ? "You" : shortName(d.payer(e.paid_by).name)} paid`;
+                return (
+                  <li key={e.id} className="flex items-center gap-3 rounded-[14px] bg-card py-3 pl-4 pr-1 shadow-card">
+                    {e.from_kitty ? <KittyIcon size={36} /> : <Avatar p={d.payer(e.paid_by)} size={36} />}
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[14px] font-bold text-ink">
+                        {money(Number(e.amount), e.currency)}
+                        {e.currency !== "MYR" && <span className="ml-1.5 text-[11px] font-medium text-muted">{e.amount_myr != null ? `≈ ${money(Number(e.amount_myr))}` : "rate unavailable"}</span>}
+                      </span>
+                      <span className="block text-[11px] leading-snug text-muted">
+                        {e.label || "Expense"} · {by}{e.split_count > 1 ? `, split ${e.split_count} ways (${money(Math.round((Number(e.amount) / e.split_count) * 100) / 100, e.currency)} each)` : ""}
+                      </span>
                     </span>
-                    <span className="block text-[11px] text-muted">
-                      {e.label || "Expense"}{e.split_count > 1 ? `, split ${e.split_count} ways (${money(Number(e.amount) / e.split_count, e.currency)} each)` : ""}
-                    </span>
-                  </span>
-                  <DeleteExpense id={e.id} placeId={place.id} />
-                </li>
-              ))}
+                    <Remove kind="expense" id={e.id} tripId={trip.id} placeId={place.id} label={`Remove ${e.label || "expense"}`} />
+                  </li>
+                );
+              })}
               {d.expenses.length > 1 && <li className="px-1 text-right text-[11px] text-muted">Total RM {spend.toFixed(2)}</li>}
             </ul>
           )}
-          <ExpenseForm placeId={place.id} tripId={trip.id} currency={currencyForCountry(trip.country_code)} />
+          <ExpenseForm className="mt-2" tripId={trip.id} placeId={place.id} members={d.members} me={user.id} currency={currencyForCountry(trip.country_code)} />
 
           <Label>Your rating</Label>
           <RatingStars placeId={place.id} tripId={trip.id} value={d.myRating} />

@@ -30,6 +30,7 @@ Tasks and models (edit them in the **Pick model for task** node — no app redep
 | plan_titles | day titles (rules planner only) | openai/gpt-oss-20b |
 | note_draft | Ato's draft note | openai/gpt-oss-20b |
 | search_summary | search summary | openai/gpt-oss-20b |
+| receipt_scan | "Scan a receipt": total, currency and shop from a photo (the photo is sent once and never stored) | qwen/qwen3.6-27b (needs a model that sees images; thinking off) |
 
 The same node also adds Ato's voice to each task: a storybook voice for the memory book, a
 cheerful one for most tasks, and a calm one for safety (alerts, trip intel). Edit the `BOOK`,

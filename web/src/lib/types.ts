@@ -94,6 +94,7 @@ export type Expense = {
   amount_myr: number | null;
   label: string | null;
   split_count: number;
+  from_kitty?: boolean;     // paid from the group kitty (paid_by is who recorded it)
   created_at: string;
 };
 

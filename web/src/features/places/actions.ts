@@ -32,37 +32,6 @@ export async function saveNote(placeId: string, tripId: string, body: string): P
   return error ? { error: "Couldn't save your note." } : done(placeId);
 }
 
-const expenseSchema = z.object({
-  amount: z.coerce.number().positive("Enter an amount above zero.").max(1_000_000),
-  label: z.string().trim().max(60).optional(),
-  split: z.coerce.number().int().min(1).max(20),
-  currency: z.enum(CURRENCIES).default("MYR"),
-});
-
-export async function addExpense(placeId: string, tripId: string, _: ActionResult, form: FormData): Promise<ActionResult> {
-  const parsed = expenseSchema.safeParse({
-    amount: form.get("amount"),
-    label: form.get("label") || undefined,
-    split: form.get("split") || 1,
-    currency: (form.get("currency") as string) || "MYR",
-  });
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
-  const { supabase, user } = await requireUser();
-  const amount_myr = await toMYR(parsed.data.amount, parsed.data.currency);
-  const { error } = await supabase.from("expenses").insert({
-    trip_id: tripId, place_id: placeId, paid_by: user.id,
-    amount: parsed.data.amount, label: parsed.data.label ?? null,
-    split_count: parsed.data.split, currency: parsed.data.currency, amount_myr,
-  });
-  return error ? { error: "Couldn't add that expense." } : done(placeId);
-}
-
-export async function deleteExpense(expenseId: string, placeId: string): Promise<ActionResult> {
-  const { supabase } = await requireUser();
-  await supabase.from("expenses").delete().eq("id", expenseId);
-  return done(placeId);
-}
-
 export async function addComment(placeId: string, tripId: string, _: ActionResult, form: FormData): Promise<ActionResult> {
   const body = String(form.get("body") ?? "").trim();
   if (!body) return { error: "Write something first." };
@@ -120,13 +89,16 @@ export async function saveMemoryDetails(placeId: string, tripId: string, _: Acti
   if (stars >= 1 && stars <= 5) await supabase.from("ratings").upsert({ place_id: placeId, trip_id: tripId, user_id: user.id, stars, updated_at: new Date().toISOString() });
   const note = String(form.get("note") ?? "").trim();
   if (note) await supabase.from("notes").upsert({ place_id: placeId, trip_id: tripId, user_id: user.id, body: note.slice(0, 2000), ai_drafted: false, updated_at: new Date().toISOString() });
-  const amount = Number(form.get("amount"));
-  if (amount > 0) {
-    const currency = CURRENCIES.includes(String(form.get("currency")) as never) ? String(form.get("currency")) : "MYR";
-    await supabase.from("expenses").insert({ trip_id: tripId, place_id: placeId, paid_by: user.id, amount, currency,
-      amount_myr: await toMYR(amount, currency), label: String(form.get("label") ?? "").trim() || null, split_count: 1 });
-  }
   const who = form.getAll("who").map(String);
+  const amount = Number(String(form.get("amount") ?? "").replace(/,/g, ""));
+  if (amount > 0 && amount <= 1_000_000) {
+    const currency = CURRENCIES.includes(String(form.get("currency")) as never) ? String(form.get("currency")) : "MYR";
+    // "Split equally with everyone who was there" — otherwise it's yours alone
+    const sharers = form.get("split_who") === "on" && who.length ? [...new Set(who)] : [user.id];
+    const { data: row } = await supabase.from("expenses").insert({ trip_id: tripId, place_id: placeId, paid_by: user.id, amount, currency,
+      amount_myr: await toMYR(amount, currency), label: String(form.get("label") ?? "").trim().slice(0, 60) || null, split_count: sharers.length }).select("id").single();
+    if (row) await supabase.from("expense_shares").insert(sharers.map((u) => ({ expense_id: row.id, trip_id: tripId, user_id: u })));
+  }
   await supabase.from("place_people").delete().eq("place_id", placeId);
   if (who.length) await supabase.from("place_people").insert(who.map((u) => ({ place_id: placeId, trip_id: tripId, user_id: u })));
   revalidatePath(`/places/${placeId}`);
